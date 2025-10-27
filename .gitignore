@@ -1,3 +1,6 @@
+#FILES TO BE IGNORED
+*.mp3
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[codz]
