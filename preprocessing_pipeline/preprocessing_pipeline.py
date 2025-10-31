@@ -13,7 +13,18 @@ import IPython.display as ipd
 import os
 from pathlib import Path
 
+#WHAT WAS DONE
+###
+# 1. Normalization
+# 2. Trimming silence
+# 3. Cropping clips to 1 min each
+# 4. Transforming voice memos into mel-spectograms
 
+# QUESTIONS
+# 1. Do we denoise? MOST IMPORTANT
+# 2. Do we augment data?
+# 3. Normalize the sample rate? MOST IMPORTANT
+###
 
 def create_directories():
     for p in glob('./data/*/*'):
