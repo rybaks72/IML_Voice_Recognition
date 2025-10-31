@@ -10,6 +10,20 @@ from init import dowload_data
 import librosa
 import librosa.display
 import IPython.display as ipd
+import os
+from pathlib import Path
+
+
+
+def create_directories():
+    for p in glob('./data/*/*/*'):
+        path,_ = os.path.splitext(p)
+        path = "\\".join(["./spectogram_data", *path.split("\\")[1:]])
+        # print(path)
+        directory = Path(path)
+        directory.mkdir(parents=True, exist_ok=True)
+        print("Directory:", directory)
+
 
 sns.set_theme(style="white", palette = None)
 color_pal = plt.rcParams["axes.prop_cycle"].by_key()["color"]
@@ -19,7 +33,7 @@ def load(path):
     return glob(path)
 
 #preprocessing - normalize, trim, crop into 1 min audios, split into 3s clips
-def process_data(path, clip_length):
+def process_data(path, clip_length, label):
     y, sr = librosa.load(path)
     y_norm = librosa.util.normalize(y)
     y_trimmed, _ = librosa.effects.trim(y_norm, top_db=20)
@@ -35,38 +49,48 @@ def process_data(path, clip_length):
         S_db_mel = librosa.amplitude_to_db(S, ref=np.max)
         spectograms.append(S_db_mel)
 
+    path, _ = os.path.splitext(path)
+    path = path.split("/")[2:][0].split("\\")
+    path.append(path[-1] + ".npz")
+    path = "/".join(["./spectogram_data", *path])
+    X = np.array(spectograms)
+    Y = np.array([label]*len(spectograms))
+    # print(f"X shape: {X.shape}")
+    # print(f"Y shape: {Y.shape}")
+
+    np.savez_compressed(path, X=X, Y=Y)
     return spectograms
 
 #convert data from data directory to spectograms
 def convert_to_spectograms(clip_length):
     dowload_data()
 
-    all_spectograms = []
-    all_labels = []
-
+    # all_spectograms = []
+    # all_labels = []
 
     class0 = glob("./data/Class0/*/*.mp3")
     class1 = glob("./data/Class1/*/*.mp3")
 
     #class0
     for clip in class0:
-        specs = process_data(clip, clip_length)
-        all_spectograms.extend(specs)
-        all_labels.extend([0] * len(specs))
+        specs = process_data(clip, clip_length, 0)
+        # all_spectograms.extend(specs)
+        # all_labels.extend([0] * len(specs))
 
     # class1
     for clip in class1:
-        specs = process_data(clip, clip_length)
-        all_spectograms.extend(specs)
-        all_labels.extend([1] * len(specs))
+        specs = process_data(clip, clip_length, 1)
+        # all_spectograms.extend(specs)
+        # all_labels.extend([1] * len(specs))
 
-    X = np.array(all_spectograms)
-    Y = np.array(all_labels)
-    print(f"X shape: {X.shape}")
-    print(f"Y shape: {Y.shape}")
+    # X = np.array(all_spectograms)
+    # Y = np.array(all_labels)
+    # print(f"X shape: {X.shape}")
+    # print(f"Y shape: {Y.shape}")
+    #
+    # #save to a file
+    # np.savez_compressed("./audio_data.npz", X=X, Y=Y)
+    # print("data saved")
 
-    #save to a file
-    np.savez_compressed("./audio_data.npz", X=X, Y=Y)
-    print("data saved")
-
+create_directories()
 convert_to_spectograms(3)
