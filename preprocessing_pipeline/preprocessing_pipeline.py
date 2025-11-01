@@ -23,28 +23,19 @@ from pathlib import Path
 # QUESTIONS
 # 1. Do we denoise? MOST IMPORTANT
 # 2. Do we augment data?
-# 3. Normalize the sample rate? MOST IMPORTANT
 ###
 
 def create_directories():
     for p in glob('./data/*/*'):
         path,_ = os.path.splitext(p)
-        path = "\\".join(["./spectogram_data", *path.split("\\")[1:]])
+        path = "/".join(["./spectogram_data", *path.split("\\")[1:]])
         directory = Path(path)
         directory.mkdir(parents=True, exist_ok=True)
         # print("Directory:", directory)
 
-
-sns.set_theme(style="white", palette = None)
-color_pal = plt.rcParams["axes.prop_cycle"].by_key()["color"]
-color_cycle = cycle(color_pal)
-
-def load(path):
-    return glob(path)
-
 #preprocessing - normalize, trim, crop into 1 min audios, split into 3s clips
-def process_data(path, clip_length, label):
-    y, sr = librosa.load(path)
+def preprocess_data(path, clip_length):
+    y, sr = librosa.load(path) #NOTE: librosa.load by default standardizes the sr to 22050 HZ
     y_norm = librosa.util.normalize(y)
     y_trimmed, _ = librosa.effects.trim(y_norm, top_db=20)
     clip_length_samples = clip_length * sr
@@ -52,13 +43,22 @@ def process_data(path, clip_length, label):
 
     y_cropped = y_trimmed[:max_len]
     y_clips = librosa.util.frame(y_cropped, frame_length=clip_length_samples, hop_length=clip_length_samples).T
+    return y_clips, sr
+
+#convert voice memo to spectograms
+def convert_to_spectograms(path, clip_length):
+    y_clips, sr = preprocess_data(path, clip_length)
     spectograms = []
 
-    for clip in y_clips:
-        S = librosa.feature.melspectrogram(y=clip, sr=sr, n_mels=128, )
+    for sample in y_clips:
+        S = librosa.feature.melspectrogram(y=sample, sr=sr, n_mels=128, )
         S_db_mel = librosa.amplitude_to_db(S, ref=np.max)
         spectograms.append(S_db_mel)
 
+    return spectograms
+
+#save spectograms in .npz format
+def save_spectograms(path, spectograms, label):
     path, _ = os.path.splitext(path)
     path = path.split("/")[2:][0].split("\\")
     name = path[-1] + ".npz"
@@ -66,26 +66,26 @@ def process_data(path, clip_length, label):
     path.append(name)
     path = "/".join(["./spectogram_data", *path]).lower()
     X = np.array(spectograms)
-    Y = np.array([label]*len(spectograms))
-    print(f"X shape: {X.shape}")
-    print(f"Y shape: {Y.shape}")
+    Y = np.array([label] * len(spectograms))
+    # print(f"X shape: {X.shape}")
+    # print(f"Y shape: {Y.shape}")
 
     np.savez_compressed(path, X=X, Y=Y)
-    return spectograms
 
-#convert data from data directory to spectograms
-def convert_to_spectograms(clip_length):
+#function used to process gathered data
+def create_spectograms_from_data(clip_length):
     dowload_data()
+    create_directories()
 
     class0 = glob("./data/Class0/*/*.mp3")
+    for path in class0:
+        spectograms = convert_to_spectograms(path, clip_length)
+        save_spectograms(path, spectograms, 0)
+
     class1 = glob("./data/Class1/*/*.mp3")
-
-    for clip in class0:
-        specs = process_data(clip, clip_length, 0)
-
-    for clip in class1:
-        specs = process_data(clip, clip_length, 1)
+    for path in class1:
+        spectograms = convert_to_spectograms(path, clip_length)
+        save_spectograms(path, spectograms, 1)
 
 
-create_directories()
-convert_to_spectograms(3)
+# create_spectograms_from_data(3)
