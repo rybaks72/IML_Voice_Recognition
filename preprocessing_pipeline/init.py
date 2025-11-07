@@ -1,5 +1,7 @@
 import kaggle
 import os
+import glob
+from pathlib import Path
 
 def dowload_data():
     if not os.path.exists("./data"):
@@ -11,3 +13,11 @@ def dowload_data():
         print(f"Data successfully downloaded.")
     else:
         print(f"Directory ./data already exists. Skipping download.")
+
+def create_directories():
+    for p in glob('./data/*/*'):
+        path,_ = os.path.splitext(p)
+        path = "/".join(["./spectogram_data", *path.split("\\")[1:]])
+        directory = Path(path)
+        directory.mkdir(parents=True, exist_ok=True)
+        # print("Directory:", directory)
