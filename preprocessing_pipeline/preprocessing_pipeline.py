@@ -29,13 +29,13 @@ import random as rand
 #=> converts each clip from the process_data output into a melspectogram
 #output: list of melspectograms derived from the processed voice memo
 
-##def create_spectograms_from_data(clip_length):
+##create_spectograms_from_data(clip_length):
 #takes the desired clip length as input
 #creates directories & downloads the dataset from kaggle
 #=> uses all the functions above to create a spectogram for each voice memo for each person in each class
 #output: no output
 
-##def random_data_split():
+##random_data_split():
 #input: none
 #randomly assigns spectograms into train-test-validate sets: class1 by clip for each person. 10-3-2
                                                             #class0 by person 14-4-2
@@ -44,7 +44,7 @@ import random as rand
         #test - test dataset
         #validate - validate dataset
 
-
+##create_raw_spectograms():
 ###
 
 #WHAT WAS DONE
@@ -57,6 +57,7 @@ import random as rand
 # QUESTIONS
 # 1. Do we denoise? MOST IMPORTANT
 # 2. Do we augment data?
+# 3. Do we save the spectograms in files or do we just pass them as a function output
 ###
 
 #preprocessing - normalize, trim, crop into 1 min audios, split into 3s clips
@@ -84,13 +85,13 @@ def convert_to_spectograms(path, clip_length):
     return spectograms
 
 #save spectograms in .npz format
-def save_spectograms(path, spectograms, label):
+def save_spectograms(path,target_dir, spectograms, label):
     path, _ = os.path.splitext(path)
     path = path.split("/")[2:][0].split("\\")
     name = path[-1] + ".npz"
     path.remove(path[-1])
     path.append(name)
-    path = "/".join(["./spectogram_data", *path]).lower()
+    path = "/".join([f"{target_dir}", *path]).lower()
     X = np.array(spectograms)
     Y = np.array([label] * len(spectograms))
     # print(f"X shape: {X.shape}")
@@ -98,20 +99,37 @@ def save_spectograms(path, spectograms, label):
 
     np.savez_compressed(path, X=X, Y=Y)
 
+def create_raw_spectograms():
+    dowload_data()
+    create_directories("./raw_spectograms")
+    class0 = glob("./data/Class0/*/*.mp3")
+    for path in class0:
+        y, sr = librosa.load(path)
+        S = librosa.feature.melspectrogram(y=y, sr=sr, n_mels=128, )
+        spectogram = librosa.amplitude_to_db(S, ref=np.max)
+        save_spectograms(path, "./raw_spectograms", spectogram, 0)
+
+    class1 = glob("./data/Class1/*/*.mp3")
+    for path in class1:
+        y, sr = librosa.load(path)
+        S = librosa.feature.melspectrogram(y=y, sr=sr, n_mels=128, )
+        spectogram = librosa.amplitude_to_db(S, ref=np.max)
+        save_spectograms(path, "./raw_spectograms", spectogram, 1)
+
 #function used to process gathered data
 def create_spectograms_from_data(clip_length):
     dowload_data()
-    create_directories()
+    create_directories("./spectogram_data")
 
     class0 = glob("./data/Class0/*/*.mp3")
     for path in class0:
         spectograms = convert_to_spectograms(path, clip_length)
-        save_spectograms(path, spectograms, 0)
+        save_spectograms(path, "./spectogram_data", spectograms, 0)
 
     class1 = glob("./data/Class1/*/*.mp3")
     for path in class1:
         spectograms = convert_to_spectograms(path, clip_length)
-        save_spectograms(path, spectograms, 1)
+        save_spectograms(path,"./spectogram_data" ,spectograms, 1)
 
 def random_data_split(): #random test-train-validate datasets
     class0 = glob("./spectogram_data/Class0/*")
@@ -173,5 +191,5 @@ def random_data_split(): #random test-train-validate datasets
 
 
 # create_spectograms_from_data(3)
-
+create_raw_spectograms()
 # print(random_data_split())
