@@ -43,15 +43,19 @@ def train():
     learning_rate = 0.001
     optimizer = optim.Adam(net.parameters(), lr=learning_rate)
 
+    best_model_loss = float('inf')
+
+    #directory for results csv file
     results_directory = "..\\results"
     os.makedirs(results_directory, exist_ok=True)
     filename_results = "..\\results\\tests_results.csv"
+    # id is assigned automatically based on how many rows we have in the filename_results file
     experiment_id = get_experiment_id(filename_results)
-    best_model = float('inf')
 
+    #directory with models
     os.makedirs("../models", exist_ok=True)
 
-    writer = SummaryWriter(log_dir=f"../tensor_board_outputs/fake_tests/id_{experiment_id}")
+    writer = SummaryWriter(log_dir=f"../tensor_board_outputs/fake_tests/id_{experiment_id}_{model_name}")
 
     print("TRAINING START")
     for epoch in range(3):  # loop over the dataset multiple times, this should be adjusted later
@@ -81,10 +85,10 @@ def train():
             }, current_batch_num)
 
             #save the best model yet TODO does this criterion make sense
-            if val_loss < best_model:
-                best_model = val_loss
+            if val_loss < best_model_loss:
+                best_model_loss = val_loss
 
-                model_path = f"../models/{model_name}_id_{experiment_id}.pth"
+                model_path = f"../models/id_{experiment_id}_{model_name}.pth"
                 torch.save({'epoch': epoch, 'batch': i, 'batch_num': current_batch_num,
                             'net_state_dict': net.state_dict(),'val_loss': val_loss }, model_path)
                 print(f"BEST (val_loss: {val_loss:.4f}) epoch:{epoch} batch:{i} batch_num:{current_batch_num} train_loss:{loss.item():.4f}")
@@ -96,33 +100,26 @@ def train():
 
         print(f"Epoch {epoch+1}, loss: {running_loss/len(trainloader):.3f}")
 
+
     print("Testing the best model")
-    net.load_state_dict((torch.load(f"../models/{model_name}_id_{experiment_id}.pth", map_location=device))['net_state_dict'])
-    test_results = test(net, testloader, device)
-    log_experiment_results(filename_results,
-                           experiment_id,
-                           model_name,
-                           test_results['accuracy'],
-                           test_results['precision'],
-                           test_results['recall'],
-                           test_results['f1_none_class0'],
-                           test_results['f1_none_class1'],
-                           test_results['f1_micro'],
-                           test_results['f1_macro'],
-                           test_results['f1_weighted'],
-                           test_results['f1_binary'],
-                           test_results['true_negative'],
-                           test_results['false_positive'],
-                           test_results['false_negative'],
-                           test_results['true_positive'],
-                           lr = learning_rate,
-                           batch_size= batch_size
-                           )
+    net.load_state_dict((torch.load(f"../models/id_{experiment_id}_{model_name}.pth", map_location=device))['net_state_dict'])
+    test_metrics = calculate_metrics(net, testloader, device)
+    val_metrics = calculate_metrics(net, valloader, device)
+    train_metrics = calculate_metrics(net, trainloader, device)
+    save_to_csv_experiment_results(filename_results,
+                                   experiment_id,
+                                   model_name,
+                                   test_metrics,
+                                   val_metrics,
+                                   train_metrics,
+                                   lr = learning_rate,
+                                   batch_size= batch_size
+                                   )
     print("TEST END")
 
     writer.close()
 
-    return test_results
+
 
 
 
@@ -139,12 +136,12 @@ def validate(net: SimpleCNN, criterion, valloader: DataLoader, device):
         return avg_loss
 
 
-def test(net: SimpleCNN, testloader: DataLoader, device):
+def calculate_metrics(net: SimpleCNN, dataloader: DataLoader, device):
     all_predictions = []
     all_labels = []
     net.eval()
     with torch.no_grad():
-        for inputs,labels in testloader:
+        for inputs,labels in dataloader:
             inputs, labels = inputs.to(device), labels.to(device)
             outputs = net(inputs)
             _,predicted = torch.max(outputs, 1)
@@ -164,64 +161,51 @@ def test(net: SimpleCNN, testloader: DataLoader, device):
     precision = precision_score(all_labels, all_predictions, zero_division=0) #tp / (tp + fp)
     recall = recall_score(all_labels, all_predictions) #tp / (tp + fn)
 
+    total_class0 = false_positive + true_negative
+    total_class1 = false_negative + true_positive
+
+    # False Acceptance Ratio – the total number of incorrectly “accepted” instances
+    # from Class 0 divided by the number of samples from Class 0.
+    FAR = false_positive / total_class0 if total_class0 > 0 else 0.0
+
+    #False Rejection Ratio – the total number of incorrectly “rejected” instances
+    #from Class 1 divided by the number of samples from Class 1.
+    FRR = false_negative / total_class1 if total_class1 > 0 else 0.0
+
     #f1 = 2*TP/(2*TP+FP+FN) and with different parameter average:
     #metrics for each class are returned
     f1_none = f1_score(all_labels, all_predictions, average=None, labels=[0, 1])
-    print(f1_none)
 
     f1_none_class0, f1_none_class1 = f1_none[0], f1_none[1]
 
-    #Calculate metrics globally by counting the total true positives,
-    # false negatives and false positives
-    f1_micro = f1_score(all_labels, all_predictions, average='micro')
-
-    #Calculate metrics for each label, and find their unweighted mean.
+    # Calculate metrics for each label, and find their unweighted mean.
     # This does not take label imbalance into account.
-    f1_macro = f1_score(all_labels, all_predictions, average='macro')
+    f1_macro = f1_score(all_labels, all_predictions, average='macro', zero_division=0)
 
-    # Calculate metrics for each label, and find their average weighted by support
-    # (the number of true instances for each label). This alters ‘macro’ to account
-    # for label imbalance; it can result in an F-score that is not between precision and recall.
-    f1_weighted = f1_score(all_labels, all_predictions, average='weighted')
-
-    #Only report results for the class specified by pos_label.
-    # This is applicable only if targets (y_{true,pred}) are binary
-    f1_binary = f1_score(all_labels, all_predictions, average='binary')
 
     results = {"accuracy": accuracy,
                "precision": precision,
                "recall": recall,
                "f1_none_class0":f1_none_class0,
                "f1_none_class1": f1_none_class1,
-               "f1_micro": f1_micro,
                "f1_macro": f1_macro,
-               "f1_weighted": f1_weighted,
-               "f1_binary": f1_binary,
                "true_negative": true_negative,
                "false_positive": false_positive,
                "false_negative": false_negative,
-               "true_positive": true_positive
+               "true_positive": true_positive,
+               'FAR': FAR,
+               'FRR': FRR
                }
 
     return results
 
-def log_experiment_results(
+def save_to_csv_experiment_results(
     filename,
     experiment_id,
     experiment_name,
-    accuracy,
-    precision,
-    recall,
-    f1_none_class0,
-    f1_none_class1,
-    f1_micro,
-    f1_macro,
-    f1_weighted,
-    f1_binary,
-    true_negative,
-    false_positive,
-    false_negative,
-    true_positive,
+    test_metrics,
+    val_metrics,
+    train_metrics,
     lr,
     batch_size,
     notes=None,
@@ -232,19 +216,42 @@ def log_experiment_results(
         "experiment_id",
         "timestamp",
         "experiment_name",
-        "accuracy",
-        "precision",
-        "recall",
-        "f1_none_class0",
-        "f1_none_class1",
-        "f1_micro",
-        "f1_macro",
-        "f1_weighted",
-        "f1_binary",
-        "true_negative",
-        "false_positive",
-        "false_negative",
-        "true_positive",
+        "test_accuracy",
+        "test_precision",
+        "test_recall",
+        "test_f1_none_class0",
+        "test_f1_none_class1",
+        "test_f1_macro",
+        "test_true_negative",
+        "test_false_positive",
+        "test_false_negative",
+        "test_true_positive",
+        "test_FAR",
+        "test_FRR",
+        "val_accuracy",
+        "val_precision",
+        "val_recall",
+        "val_f1_none_class0",
+        "val_f1_none_class1",
+        "val_f1_macro",
+        "val_true_negative",
+        "val_false_positive",
+        "val_false_negative",
+        "val_true_positive",
+        "val_FAR",
+        "val_FRR",
+        "train_accuracy",
+        "train_precision",
+        "train_recall",
+        "train_f1_none_class0",
+        "train_f1_none_class1",
+        "train_f1_macro",
+        "train_true_negative",
+        "train_false_positive",
+        "train_false_negative",
+        "train_true_positive",
+        "train_FAR",
+        "train_FRR",
         "learning_rate",
         "batch_size",
         "notes"
@@ -254,50 +261,49 @@ def log_experiment_results(
         experiment_id,
         timestamp,
         experiment_name,
-        round(accuracy, 4),
-        round(precision, 4),
-        round(recall, 4),
-        round(f1_none_class0, 4),
-        round(f1_none_class1, 4),
-        round(f1_micro, 4),
-        round(f1_macro, 4),
-        round(f1_weighted, 4),
-        round(f1_binary, 4),
-        true_negative,
-        false_positive,
-        false_negative,
-        true_positive,
+        round(test_metrics['accuracy'], 4),
+        round(test_metrics['precision'], 4),
+        round(test_metrics['recall'], 4),
+        round(test_metrics['f1_none_class0'], 4),
+        round(test_metrics['f1_none_class1'], 4),
+        round(test_metrics['f1_macro'], 4),
+        test_metrics['true_negative'],
+        test_metrics['false_positive'],
+        test_metrics['false_negative'],
+        test_metrics['true_positive'],
+        test_metrics['FAR'],
+        test_metrics['FRR'],
+        round(val_metrics['accuracy'], 4),
+        round(val_metrics['precision'], 4),
+        round(val_metrics['recall'], 4),
+        round(val_metrics['f1_none_class0'], 4),
+        round(val_metrics['f1_none_class1'], 4),
+        round(val_metrics['f1_macro'], 4),
+        val_metrics['true_negative'],
+        val_metrics['false_positive'],
+        val_metrics['false_negative'],
+        val_metrics['true_positive'],
+        val_metrics['FAR'],
+        val_metrics['FRR'],
+        round(train_metrics['accuracy'], 4),
+        round(train_metrics['precision'], 4),
+        round(train_metrics['recall'], 4),
+        round(train_metrics['f1_none_class0'], 4),
+        round(train_metrics['f1_none_class1'], 4),
+        round(train_metrics['f1_macro'], 4),
+        train_metrics['true_negative'],
+        train_metrics['false_positive'],
+        train_metrics['false_negative'],
+        train_metrics['true_positive'],
+        train_metrics['FAR'],
+        train_metrics['FRR'],
         lr,
         batch_size,
         notes if notes is not None else ""
     ]
 
-    print("\n" + "*" * 70)
-    print(f" EXPERIMENT {experiment_id}: {experiment_name}")
-    print(f"Timestamp: {timestamp}")
-    print(f"Accuracy: {accuracy:.4f}")
-    print(f"Precision: {precision:.4f}")
-    print(f"Recall: {recall:.4f}")
-    print(f"F1 None class0: {f1_none_class0:.4f}")
-    print(f"F1 none classs1: {f1_none_class1:.4f}")
-    print(f"F1 Micro: {f1_micro:.4f}")
-    print(f"F1 Macro: {f1_macro:.4f}")
-    print(f"F1 Weighted: {f1_weighted:.4f}")
-    print(f"F1 Binary: {f1_binary:.4f}")
-    print(f"True Negative: {true_negative}")
-    print(f"False Positive: {false_positive}")
-    print(f"False Negative: {false_negative}")
-    print(f"True Positive: {true_positive}")
-    print(f"Learning Rate: {lr}")
-    print(f"Batch Size: {batch_size}")
-    if notes:
-        print(f"Notes: {notes}")
-    print("*" * 70 + "\n")
-
-
     file_exists = os.path.isfile(filename)
     with open(filename, "a", newline="") as f:
-
         writer = csv.writer(f)
         #if file does not exist write header first
         if not file_exists:
@@ -305,6 +311,54 @@ def log_experiment_results(
         writer.writerow(row)
 
     print(f"Results saved to {filename}\n")
+
+    #printing
+    print(f"experiment_id: {experiment_id}")
+    print(f"timestamp: {timestamp}")
+    print(f"experiment_name: {experiment_name}")
+
+    print(f"test_accuracy: {round(test_metrics['accuracy'], 4)}")
+    print(f"test_precision: {round(test_metrics['precision'], 4)}")
+    print(f"test_recall: {round(test_metrics['recall'], 4)}")
+    print(f"test_f1_none_class0: {round(test_metrics['f1_none_class0'], 4)}")
+    print(f"test_f1_none_class1: {round(test_metrics['f1_none_class1'], 4)}")
+    print(f"test_f1_macro: {round(test_metrics['f1_macro'], 4)}")
+    print(f"test_true_negative: {test_metrics['true_negative']}")
+    print(f"test_false_positive: {test_metrics['false_positive']}")
+    print(f"test_false_negative: {test_metrics['false_negative']}")
+    print(f"test_true_positive: {test_metrics['true_positive']}")
+    print(f"test_FAR: {test_metrics['FAR']}")
+    print(f"test_FRR: {test_metrics['FRR']}")
+
+    print(f"val_accuracy: {round(val_metrics['accuracy'], 4)}")
+    print(f"val_precision: {round(val_metrics['precision'], 4)}")
+    print(f"val_recall: {round(val_metrics['recall'], 4)}")
+    print(f"val_f1_none_class0: {round(val_metrics['f1_none_class0'], 4)}")
+    print(f"val_f1_none_class1: {round(val_metrics['f1_none_class1'], 4)}")
+    print(f"val_f1_macro: {round(val_metrics['f1_macro'], 4)}")
+    print(f"val_true_negative: {val_metrics['true_negative']}")
+    print(f"val_false_positive: {val_metrics['false_positive']}")
+    print(f"val_false_negative: {val_metrics['false_negative']}")
+    print(f"val_true_positive: {val_metrics['true_positive']}")
+    print(f"val_FAR: {val_metrics['FAR']}")
+    print(f"val_FRR: {val_metrics['FRR']}")
+
+    print(f"train_accuracy: {round(train_metrics['accuracy'], 4)}")
+    print(f"train_precision: {round(train_metrics['precision'], 4)}")
+    print(f"train_recall: {round(train_metrics['recall'], 4)}")
+    print(f"train_f1_none_class0: {round(train_metrics['f1_none_class0'], 4)}")
+    print(f"train_f1_none_class1: {round(train_metrics['f1_none_class1'], 4)}")
+    print(f"train_f1_macro: {round(train_metrics['f1_macro'], 4)}")
+    print(f"train_true_negative: {train_metrics['true_negative']}")
+    print(f"train_false_positive: {train_metrics['false_positive']}")
+    print(f"train_false_negative: {train_metrics['false_negative']}")
+    print(f"train_true_positive: {train_metrics['true_positive']}")
+    print(f"train_FAR: {train_metrics['FAR']}")
+    print(f"train_FRR: {train_metrics['FRR']}")
+
+    print(f"lr: {lr}")
+    print(f"batch_size: {batch_size}")
+
 
 def get_experiment_id(filename):
     if not os.path.isfile(filename):
