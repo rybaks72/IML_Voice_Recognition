@@ -9,19 +9,7 @@ from torch.utils.tensorboard import SummaryWriter
 import csv
 import os
 from datetime import datetime
-
-
-# fake test dataset for testing,  I assume size 64x64 for spectrogram, but we can change it quickly later
-class FakeSpectrogramDataset(Dataset):
-    def __init__(self, n_samples=200):
-        self.data = np.random.randn(n_samples, 1, 64, 64).astype(np.float32)
-        self.labels = np.random.randint(0, 2, n_samples)
-
-    def __len__(self):
-        return len(self.labels)
-
-    def __getitem__(self, idx):
-        return torch.tensor(self.data[idx]), torch.tensor(self.labels[idx], dtype=torch.long)
+from preprocessing_pipeline.preprocessing_pipeline import random_data_split
 
 
 def train():
@@ -29,13 +17,11 @@ def train():
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     print(f"Using device: {device}")
 
-    dataset = FakeSpectrogramDataset()
-    batch_size = 8
-    trainloader = DataLoader(dataset, batch_size=batch_size, shuffle=True)
-    dataset_val = FakeSpectrogramDataset(n_samples=30)
-    valloader = DataLoader(dataset_val, batch_size=8, shuffle=False)
-    dataset_test = FakeSpectrogramDataset(n_samples=60)
-    testloader = DataLoader(dataset_test, batch_size=8, shuffle=False)
+    dataset = random_data_split()
+    batch_size = 20
+    trainloader = DataLoader(dataset['train'], batch_size=batch_size, shuffle=True)
+    valloader = DataLoader(dataset['validate'], batch_size=8, shuffle=False)
+    testloader = DataLoader(dataset['test'], batch_size=8, shuffle=False)
 
     model_name = "first_trial"
     net = SimpleCNN().to(device)
