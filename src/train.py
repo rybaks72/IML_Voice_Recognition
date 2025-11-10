@@ -1,10 +1,10 @@
 import torch
 import torch.nn as nn
 import torch.optim as optim
-from torch.utils.data import Dataset, DataLoader
+from torch.utils.data import TensorDataset, DataLoader
 import numpy as np
 from sklearn.metrics import f1_score, confusion_matrix, accuracy_score, precision_score, recall_score
-from model import SimpleCNN
+from src.model import SimpleCNN
 from torch.utils.tensorboard import SummaryWriter
 import csv
 import os
@@ -17,11 +17,13 @@ def train():
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     print(f"Using device: {device}")
 
-    dataset = random_data_split()
+    x_train, y_train = random_data_split()['train']
+    x_valid, y_valid = random_data_split()['validate']
+    x_test, y_test = random_data_split()['test']
     batch_size = 20
-    trainloader = DataLoader(dataset['train'], batch_size=batch_size, shuffle=True)
-    valloader = DataLoader(dataset['validate'], batch_size=8, shuffle=False)
-    testloader = DataLoader(dataset['test'], batch_size=8, shuffle=False)
+    trainloader = DataLoader(TensorDataset(x_train, y_train), batch_size=batch_size, shuffle=True)
+    valloader = DataLoader(TensorDataset(x_valid, y_valid), batch_size=8, shuffle=False)
+    testloader = DataLoader(TensorDataset(x_test, y_test), batch_size=8, shuffle=False)
 
     model_name = "first_trial"
     net = SimpleCNN().to(device)
@@ -48,8 +50,10 @@ def train():
         net.train()
         running_loss = 0.0
         for i, data in enumerate(trainloader, 0):
+
             inputs, labels = data
-            inputs, labels = inputs.to(device), labels.to(device)
+            print(f"inputs shape: {inputs.shape}")
+            inputs, labels = inputs.float().to(device), labels.to(device)
 
             optimizer.zero_grad()
 

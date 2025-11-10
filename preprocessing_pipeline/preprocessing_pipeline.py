@@ -5,7 +5,7 @@ import seaborn as sns
 
 from glob import glob
 from itertools import cycle
-from init import dowload_data, create_directories
+#from .init import dowload_data, create_directories # I HAD TO COMMENT THIS OUT
 
 import librosa
 import librosa.display
@@ -99,41 +99,49 @@ def save_spectograms(path,target_dir, spectograms, label):
 
     np.savez_compressed(path, X=X, Y=Y)
 
-def create_raw_spectograms():
-    dowload_data()
-    create_directories("./raw_spectograms")
-    class0 = glob("./data/Class0/*/*.mp3")
-    for path in class0:
-        y, sr = librosa.load(path)
-        S = librosa.feature.melspectrogram(y=y, sr=sr, n_mels=128, )
-        spectogram = librosa.amplitude_to_db(S, ref=np.max)
-        save_spectograms(path, "./raw_spectograms", spectogram, 0)
-
-    class1 = glob("./data/Class1/*/*.mp3")
-    for path in class1:
-        y, sr = librosa.load(path)
-        S = librosa.feature.melspectrogram(y=y, sr=sr, n_mels=128, )
-        spectogram = librosa.amplitude_to_db(S, ref=np.max)
-        save_spectograms(path, "./raw_spectograms", spectogram, 1)
-
-#function used to process gathered data
-def create_spectograms_from_data(clip_length):
-    dowload_data()
-    create_directories("./spectogram_data")
-
-    class0 = glob("./data/Class0/*/*.mp3")
-    for path in class0:
-        spectograms = convert_to_spectograms(path, clip_length)
-        save_spectograms(path, "./spectogram_data", spectograms, 0)
-
-    class1 = glob("./data/Class1/*/*.mp3")
-    for path in class1:
-        spectograms = convert_to_spectograms(path, clip_length)
-        save_spectograms(path,"./spectogram_data" ,spectograms, 1)
+# def create_raw_spectograms():
+#     dowload_data()
+#     create_directories("./raw_spectograms")
+#     class0 = glob("./data/Class0/*/*.mp3")
+#     for path in class0:
+#         y, sr = librosa.load(path)
+#         S = librosa.feature.melspectrogram(y=y, sr=sr, n_mels=128, )
+#         spectogram = librosa.amplitude_to_db(S, ref=np.max)
+#         save_spectograms(path, "./raw_spectograms", spectogram, 0)
+#
+#     class1 = glob("./data/Class1/*/*.mp3")
+#     for path in class1:
+#         y, sr = librosa.load(path)
+#         S = librosa.feature.melspectrogram(y=y, sr=sr, n_mels=128, )
+#         spectogram = librosa.amplitude_to_db(S, ref=np.max)
+#         save_spectograms(path, "./raw_spectograms", spectogram, 1)
+#
+# #function used to process gathered data
+# def create_spectograms_from_data(clip_length):
+#     dowload_data()
+#     create_directories("./spectogram_data")
+#
+#     class0 = glob("./data/Class0/*/*.mp3")
+#     for path in class0:
+#         spectograms = convert_to_spectograms(path, clip_length)
+#         save_spectograms(path, "./spectogram_data", spectograms, 0)
+#
+#     class1 = glob("./data/Class1/*/*.mp3")
+#     for path in class1:
+#         spectograms = convert_to_spectograms(path, clip_length)
+#         save_spectograms(path,"./spectogram_data" ,spectograms, 1)
 
 def random_data_split(): #random test-train-validate datasets
-    class0 = glob("./spectogram_data/Class0/*")
-    class1 = glob("./spectogram_data/Class1/*")
+    # BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+    #
+    # class0 = glob(os.path.join(BASE_DIR, "../spectogram_data/Class0/*"))
+    # class1 = glob(os.path.join(BASE_DIR, "../spectogram_data/Class1/*"))
+
+    # class0 = glob("./spectogram_data/Class0/*")
+    # class1 = glob("./spectogram_data/Class1/*")
+    class0 = glob("./preprocessing_pipeline/spectogram_data/Class0/*")
+    class1 = glob("./preprocessing_pipeline/spectogram_data/Class1/*")
+    print(f"Found {len(class0)} files in Class0 and {len(class1)} in Class1")
     train = {
         'X': [],
         'Y': [],
@@ -160,8 +168,12 @@ def random_data_split(): #random test-train-validate datasets
         dataset['length']-=1
         for path in person_path:
             specs = np.load(path, allow_pickle=True)
-            dataset['X'].extend(specs['X'])
-            dataset['Y'].extend(specs['Y'])
+            # dataset['X'].extend(specs['X'])
+            # dataset['Y'].extend(specs['Y'])
+            # Convert X to tensor, add channel dimension, then extend
+            X_tensor = torch.tensor(np.array(specs['X']), dtype=torch.float32).unsqueeze(1)  # [num_samples, 1, H, W]
+            dataset['X'].extend(list(X_tensor))
+            dataset['Y'].extend(list(specs['Y']))
 
     for person in class1:
         person_path = glob(f'{person}/*.npz')
@@ -176,8 +188,15 @@ def random_data_split(): #random test-train-validate datasets
             dataset['length']-=1
 
             specs = np.load(path, allow_pickle=True)
-            dataset['X'].extend(specs['X'])
-            dataset['Y'].extend(specs['Y'])
+            # dataset['X'].extend(specs['X'])
+            # dataset['Y'].extend(specs['Y'])
+            X_tensor = torch.tensor(np.array(specs['X']), dtype=torch.float32).unsqueeze(1)
+            dataset['X'].extend(list(X_tensor))
+            dataset['Y'].extend(list(specs['Y']))
+
+    print("Train set size:", len(train['X']))
+    print("Test set size:", len(test['X']))
+    print("Validate set size:", len(validate['X']))
 
     return {
         'train': (torch.tensor(np.array(train['X'])), torch.tensor(np.array(train['Y']))),
@@ -191,5 +210,5 @@ def random_data_split(): #random test-train-validate datasets
 
 
 # create_spectograms_from_data(3)
-create_raw_spectograms()
+#create_raw_spectograms()
 # print(random_data_split())
