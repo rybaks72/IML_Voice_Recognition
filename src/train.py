@@ -34,19 +34,19 @@ def train():
     best_model_loss = float('inf')
 
     #directory for results csv file
-    results_directory = "..\\results"
+    results_directory = ".\\results"
     os.makedirs(results_directory, exist_ok=True)
-    filename_results = "..\\results\\tests_results.csv"
+    filename_results = ".\\results\\tests_results.csv"
     # id is assigned automatically based on how many rows we have in the filename_results file
     experiment_id = get_experiment_id(filename_results)
 
     #directory with models
-    os.makedirs("../models", exist_ok=True)
+    os.makedirs("./models", exist_ok=True)
 
-    writer = SummaryWriter(log_dir=f"../tensor_board_outputs/fake_tests/id_{experiment_id}_{model_name}")
+    writer = SummaryWriter(log_dir=f"./tensor_board_outputs/id_{experiment_id}_{model_name}")
 
     print("TRAINING START")
-    for epoch in range(3):  # loop over the dataset multiple times, this should be adjusted later
+    for epoch in range(10):  # loop over the dataset multiple times, this should be adjusted later
         net.train()
         running_loss = 0.0
         for i, data in enumerate(trainloader, 0):
@@ -74,11 +74,11 @@ def train():
                 'validation': val_loss
             }, current_batch_num)
 
-            #save the best model yet TODO does this criterion make sense
+            #save the best model yet
             if val_loss < best_model_loss:
                 best_model_loss = val_loss
 
-                model_path = f"../models/id_{experiment_id}_{model_name}.pth"
+                model_path = f"./models/id_{experiment_id}_{model_name}.pth"
                 torch.save({'epoch': epoch, 'batch': i, 'batch_num': current_batch_num,
                             'net_state_dict': net.state_dict(),'val_loss': val_loss }, model_path)
                 print(f"BEST (val_loss: {val_loss:.4f}) epoch:{epoch} batch:{i} batch_num:{current_batch_num} train_loss:{loss.item():.4f}")
@@ -92,7 +92,7 @@ def train():
 
 
     print("Testing the best model")
-    net.load_state_dict((torch.load(f"../models/id_{experiment_id}_{model_name}.pth", map_location=device))['net_state_dict'])
+    net.load_state_dict((torch.load(f"./models/id_{experiment_id}_{model_name}.pth", map_location=device))['net_state_dict'])
     test_metrics = calculate_metrics(net, testloader, device)
     val_metrics = calculate_metrics(net, valloader, device)
     train_metrics = calculate_metrics(net, trainloader, device)
