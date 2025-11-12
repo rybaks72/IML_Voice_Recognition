@@ -5,7 +5,6 @@ import seaborn as sns
 
 from glob import glob
 from itertools import cycle
-from init import dowload_data, create_directories
 
 import librosa
 import librosa.display
@@ -14,7 +13,8 @@ import os
 from pathlib import Path
 
 import torch
-import random as rand
+from init import dowload_data, create_directories
+from util import preprocess_data, convert_to_spectograms
 
 #GUIDE
 ###
@@ -60,30 +60,6 @@ import random as rand
 # 3. Do we save the spectograms in files or do we just pass them as a function output
 ###
 
-#preprocessing - normalize, trim, crop into 1 min audios, split into 3s clips
-def preprocess_data(path, clip_length):
-    y, sr = librosa.load(path) #NOTE: librosa.load by default standardizes the sr to 22050 HZ
-    y_norm = librosa.util.normalize(y)
-    y_trimmed, _ = librosa.effects.trim(y_norm, top_db=20)
-    clip_length_samples = clip_length * sr
-    max_len = sr * 60
-
-    y_cropped = y_trimmed[:max_len]
-    y_clips = librosa.util.frame(y_cropped, frame_length=clip_length_samples, hop_length=clip_length_samples).T
-    return y_clips, sr
-
-#convert voice memo to spectograms
-def convert_to_spectograms(path, clip_length):
-    y_clips, sr = preprocess_data(path, clip_length)
-    spectograms = []
-
-    for sample in y_clips:
-        S = librosa.feature.melspectrogram(y=sample, sr=sr, n_mels=128, )
-        S_db_mel = librosa.amplitude_to_db(S, ref=np.max)
-        spectograms.append(S_db_mel)
-
-    return spectograms
-
 #save spectograms in .npz format
 def save_spectograms(path,target_dir, spectograms, label):
     path, _ = os.path.splitext(path)
@@ -123,73 +99,15 @@ def create_spectograms_from_data(clip_length):
 
     class0 = glob("./data/Class0/*/*.mp3")
     for path in class0:
-        spectograms = convert_to_spectograms(path, clip_length)
+        audio, sr = librosa.load(path)
+        spectograms = convert_to_spectograms(audio, sr, clip_length)
         save_spectograms(path, "./spectogram_data", spectograms, 0)
 
     class1 = glob("./data/Class1/*/*.mp3")
     for path in class1:
-        spectograms = convert_to_spectograms(path, clip_length)
+        audio, sr = librosa.load(path)
+        spectograms = convert_to_spectograms(audio, sr, clip_length)
         save_spectograms(path,"./spectogram_data" ,spectograms, 1)
 
-def random_data_split(): #random test-train-validate datasets
-    class0 = glob("./spectogram_data/Class0/*")
-    class1 = glob("./spectogram_data/Class1/*")
-    train = {
-        'X': [],
-        'Y': [],
-        'length': 14
-    }
-    test = {
-        'X': [],
-        'Y': [],
-        'length': 4
-    }
-    validate = {
-        'X': [],
-        'Y': [],
-        'length': 2
-    }
-    sets = [test, train, validate]
-    #print(len(class0))
-
-    for person in class0:
-        person_path = glob(f'{person}/*.npz')
-
-        available_sets = [s for s in sets if s['length'] != 0]
-        dataset = rand.choice(available_sets)
-        dataset['length']-=1
-        for path in person_path:
-            specs = np.load(path, allow_pickle=True)
-            dataset['X'].extend(specs['X'])
-            dataset['Y'].extend(specs['Y'])
-
-    for person in class1:
-        person_path = glob(f'{person}/*.npz')
-
-        train['length'] = 10
-        test['length'] = 3
-        validate['length'] = 2
-
-        for path in person_path:
-            available_sets = [s for s in sets if s['length'] != 0]
-            dataset = rand.choice(available_sets)
-            dataset['length']-=1
-
-            specs = np.load(path, allow_pickle=True)
-            dataset['X'].extend(specs['X'])
-            dataset['Y'].extend(specs['Y'])
-
-    return {
-        'train': (torch.tensor(np.array(train['X'])), torch.tensor(np.array(train['Y']))),
-        'test': (torch.tensor(np.array(test['X'])), torch.tensor(np.array(test['Y']))),
-        'validate': (torch.tensor(np.array(validate['X'])), torch.tensor(np.array(validate['Y'])))
-    }
-
-
-
-
-
-
-# create_spectograms_from_data(3)
-create_raw_spectograms()
-# print(random_data_split())
+#create_spectograms_from_data(3)
+#create_raw_spectograms()
