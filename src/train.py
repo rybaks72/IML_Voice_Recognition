@@ -45,8 +45,10 @@ def train():
 
     writer = SummaryWriter(log_dir=f"./tensor_board_outputs/id_{experiment_id}_{model_name}")
 
+    max_epochs = 10
+    best_epoch = 0
     print("TRAINING START")
-    for epoch in range(10):  # loop over the dataset multiple times, this should be adjusted later
+    for epoch in range(max_epochs):  # loop over the dataset multiple times, this should be adjusted later
         net.train()
         running_loss = 0.0
         for i, data in enumerate(trainloader, 0):
@@ -77,7 +79,7 @@ def train():
             #save the best model yet
             if val_loss < best_model_loss:
                 best_model_loss = val_loss
-
+                best_epoch = epoch
                 model_path = f"./models/id_{experiment_id}_{model_name}.pth"
                 torch.save({'epoch': epoch, 'batch': i, 'batch_num': current_batch_num,
                             'net_state_dict': net.state_dict(),'val_loss': val_loss }, model_path)
@@ -103,7 +105,9 @@ def train():
                                    val_metrics,
                                    train_metrics,
                                    lr = learning_rate,
-                                   batch_size= batch_size
+                                   batch_size= batch_size,
+                                   max_epochs=max_epochs,
+                                   best_epoch=best_epoch
                                    )
     print("TEST END")
 
@@ -198,6 +202,8 @@ def save_to_csv_experiment_results(
     train_metrics,
     lr,
     batch_size,
+    max_epochs,
+    best_epoch,
     notes=None,
 ):
 
@@ -244,6 +250,8 @@ def save_to_csv_experiment_results(
         "train_FRR",
         "learning_rate",
         "batch_size",
+        "max_epochs",
+        "best epoch",
         "notes"
     ]
 
@@ -289,6 +297,8 @@ def save_to_csv_experiment_results(
         train_metrics['FRR'],
         lr,
         batch_size,
+        max_epochs,
+        best_epoch,
         notes if notes is not None else ""
     ]
 
@@ -348,6 +358,8 @@ def save_to_csv_experiment_results(
 
     print(f"lr: {lr}")
     print(f"batch_size: {batch_size}")
+    print(f"max_epochs: {max_epochs}")
+    print(f"best_epoch: {best_epoch}")
 
 
 def get_experiment_id(filename):
