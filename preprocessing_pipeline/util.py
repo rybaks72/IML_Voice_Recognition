@@ -22,7 +22,7 @@ def random_data_split(path="./"): #random test-train-validate datasets
     class1 = glob(f"{path}/spectogram_data/Class1/*")
     noise_noise = glob(f"{path}/spectogram_data/Random_Noise/noise/*")
     noise_people = glob(f"{path}/spectogram_data/Random_Noise/people/*")
-
+    print(path)
     train = {
         'X': [],
         'Y': [],
@@ -111,4 +111,4 @@ def convert_to_spectograms(audio, sr, clip_length):
 
     return spectograms
 
-print(random_data_split())
+# print(random_data_split())
