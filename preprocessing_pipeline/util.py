@@ -4,10 +4,25 @@ import numpy as np
 import random as rand
 import librosa
 
+def helper(path_lists, train, test, validate):
+    sets = [test, train, validate]
+
+    for path in path_lists:
+        available_sets = [s for s in sets if s['length'] != 0]
+        dataset = rand.choice(available_sets)
+        dataset['length']-=1
+
+        specs = np.load(path, allow_pickle=True)
+        dataset['X'].extend(specs['X'])
+        dataset['Y'].extend(specs['Y'])
+
 #INPUT: path to spectrogram data
 def random_data_split(path="./"): #random test-train-validate datasets
     class0 = glob(f"{path}/spectogram_data/Class0/*")
     class1 = glob(f"{path}/spectogram_data/Class1/*")
+    noise_noise = glob(f"{path}/spectogram_data/Random_Noise/noise/*")
+    noise_people = glob(f"{path}/spectogram_data/Random_Noise/people/*")
+
     train = {
         'X': [],
         'Y': [],
@@ -38,24 +53,28 @@ def random_data_split(path="./"): #random test-train-validate datasets
             dataset['Y'].extend(specs['Y'])
 
     for person in class1:
-        person_path = glob(f'{person}/*.npz')
+         person_path = glob(f'{person}/*.npz')
+         train['length'] = 10
+         test['length'] = 3
+         validate['length'] = 2
+         helper(person_path, train, test, validate)
 
-        train['length'] = 10
-        test['length'] = 3
-        validate['length'] = 2
+    #noise_people
+    train['length'] =  9
+    test['length'] = 3
+    validate['length'] = 2
+    helper(noise_people,train,test,validate)
 
-        for path in person_path:
-            available_sets = [s for s in sets if s['length'] != 0]
-            dataset = rand.choice(available_sets)
-            dataset['length']-=1
-
-            specs = np.load(path, allow_pickle=True)
-            dataset['X'].extend(specs['X'])
-            dataset['Y'].extend(specs['Y'])
+    #noise_noise
+    train['length'] = 3
+    test['length'] = 2
+    validate['length'] = 1
+    helper(noise_noise, train, test, validate)
 
     print(len(train['X']),len(train['Y']))
     print(len(test['X']),len(test['Y']))
     print(len(validate['X']),len(validate['Y']))
+    print(len(train['X']) + len(test['X']) +len(validate['X']))
     # print(train)
     # print(test)
     # print(validate)
@@ -92,4 +111,4 @@ def convert_to_spectograms(audio, sr, clip_length):
 
     return spectograms
 
-# print(random_data_split())
+print(random_data_split())
