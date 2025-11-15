@@ -16,6 +16,7 @@ import torch
 from init import dowload_data, create_directories
 from util import preprocess_data, convert_to_spectograms
 
+import gc
 #GUIDE
 ###
 ##process_data(path, clip_length):
@@ -61,53 +62,56 @@ from util import preprocess_data, convert_to_spectograms
 ###
 
 #save spectograms in .npz format
-def save_spectograms(path,target_dir, spectograms, label):
+def save_spectrogram(path,target_dir, spectrogram, label):
     path, _ = os.path.splitext(path)
     path = path.split("/")[2:][0].split("\\")
     name = path[-1] + ".npz"
     path.remove(path[-1])
     path.append(name)
     path = "/".join([f"{target_dir}", *path]).lower()
-    X = np.array(spectograms)
-    Y = np.array([label] * len(spectograms))
+    X = np.array(spectrogram)
+    Y = np.array([label] * len(spectrogram))
     # print(f"X shape: {X.shape}")
     # print(f"Y shape: {Y.shape}")
 
     np.savez_compressed(path, X=X, Y=Y)
 
-def create_raw_spectograms():
+def create_raw_spectrogram():
     dowload_data()
-    create_directories("./raw_spectograms")
+    create_directories("./raw_spectrogram")
     class0 = glob("./data/Class0/*/*.mp3")
     for path in class0:
         y, sr = librosa.load(path)
         S = librosa.feature.melspectrogram(y=y, sr=sr, n_mels=128, )
-        spectogram = librosa.amplitude_to_db(S, ref=np.max)
-        save_spectograms(path, "./raw_spectograms", spectogram, 0)
+        spectrogram = librosa.amplitude_to_db(S, ref=np.max)
+        save_spectrogram(path, "./raw_spectrogram", spectrogram, 0)
 
     class1 = glob("./data/Class1/*/*.mp3")
     for path in class1:
         y, sr = librosa.load(path)
         S = librosa.feature.melspectrogram(y=y, sr=sr, n_mels=128, )
-        spectogram = librosa.amplitude_to_db(S, ref=np.max)
-        save_spectograms(path, "./raw_spectograms", spectogram, 1)
+        spectrogram = librosa.amplitude_to_db(S, ref=np.max)
+        save_spectrogram(path, "./raw_spectrogram", spectrogram, 1)
 
+def spectrogram_conversion_loop(path_list, label, clip_length):
+    for path in path_list:
+        audio, sr = librosa.load(path)
+        spectrogram = convert_to_spectograms(audio, sr, clip_length)
+        save_spectrogram(path, "./spectogram_data", spectrogram, label)
+        del audio, spectrogram
+    gc.collect()
 #function used to process gathered data
-def create_spectograms_from_data(clip_length):
+def create_spectrogram_from_data(clip_length):
     dowload_data()
     create_directories("./spectogram_data")
 
     class0 = glob("./data/Class0/*/*.mp3")
-    for path in class0:
-        audio, sr = librosa.load(path)
-        spectograms = convert_to_spectograms(audio, sr, clip_length)
-        save_spectograms(path, "./spectogram_data", spectograms, 0)
+    spectrogram_conversion_loop(class0, 0, clip_length)
+
+    noise = glob("./data/Random_Noise/*/*.mp3")
+    spectrogram_conversion_loop(noise, 0, clip_length)
 
     class1 = glob("./data/Class1/*/*.mp3")
-    for path in class1:
-        audio, sr = librosa.load(path)
-        spectograms = convert_to_spectograms(audio, sr, clip_length)
-        save_spectograms(path,"./spectogram_data" ,spectograms, 1)
-
-#create_spectograms_from_data(3)
-#create_raw_spectograms()
+    spectrogram_conversion_loop(class1, 1, clip_length)
+create_spectrogram_from_data(3)
+#create_raw_spectrogram()
