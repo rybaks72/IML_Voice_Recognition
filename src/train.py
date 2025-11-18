@@ -124,13 +124,32 @@ def train():
 def validate(net: SimpleCNN, criterion, valloader: DataLoader, device):
     net.eval()
     total_loss = 0.0
+    correct_class0 = 0
+    total_class0 = 0
+    correct_class1 = 0
+    total_class1 = 0
     with torch.no_grad():
         for inputs,labels in valloader:
             inputs, labels = inputs.to(device), labels.to(device)
             outputs = net(inputs)
             loss = criterion(outputs, labels)
             total_loss += loss.item()
+            _, predicted = torch.max(outputs, 1)
+
+            for label, prediction in zip(labels, predicted):
+                if int(label.item()) == 0:
+                    total_class0 += 1
+                    if int(prediction.item()) == 0: correct_class0 += 1
+                elif int(label.item()) == 1:
+                    total_class1 += 1
+                    if int(prediction.item()) == 1: correct_class1 += 1
         avg_loss = total_loss / len(valloader)
+
+        acc0 = correct_class0 / total_class0 if total_class0 > 0 else 0
+        acc1 = correct_class1 / total_class1 if total_class1 > 0 else 0
+
+        # Log to TensorBoard
+        print(f"\n>>> [VAL REPORT] Loss: {avg_loss:.4f} | Class 0 (Imposters): {acc0:.1f}% | Class 1 (You): {acc1:.1f}%")
         return avg_loss
 
 

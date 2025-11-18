@@ -106,8 +106,10 @@ def convert_to_spectograms(audio, sr, clip_length):
 
     for sample in y_clips:
         S = librosa.feature.melspectrogram(y=sample, sr=sr, n_mels=128, )
-        S_db_mel = librosa.pcen(S, sr=sr)
-        spectograms.append(S_db_mel)
+        S_pcen = librosa.pcen(S, sr=sr, time_constant=0.4,gain=0.4)
+        S_norm = S_pcen/30
+        S_norm = np.clip(S_norm, 0, 1)
+        spectograms.append(S_norm)
 
     return spectograms
 
