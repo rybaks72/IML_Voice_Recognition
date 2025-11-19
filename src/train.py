@@ -16,7 +16,12 @@ def train():
     #model, inputs and labels have to be on the same device
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     print(f"Using device: {device}")
-    data = random_data_split(path="../preprocessing_pipeline")
+    # changed path here
+    #IMPORTANT run it from IML_voice_recognition directory using python -m src.train or at least this way it works for me
+    # if you want to run it from the src directory change the path below to "../preprocessing_pipeline" but in my case the imports did not work AND THEN
+    # you have to change the path to models, results and tensor_board_outputs directory
+    # I will try to fix that later so that you can change it in 1 place or maybe nowhere
+    data = random_data_split(path="./preprocessing_pipeline")
     x_train, y_train = data['train']
     x_valid, y_valid = data['validate']
     x_test, y_test = data['test']
@@ -149,7 +154,7 @@ def validate(net: SimpleCNN, criterion, valloader: DataLoader, device):
         acc1 = correct_class1 / total_class1 if total_class1 > 0 else 0
 
         # Log to TensorBoard
-        print(f"\n>>> [VAL REPORT] Loss: {avg_loss:.4f} | Class 0 (Imposters): {acc0:.1f}% | Class 1 (You): {acc1:.1f}%")
+        print(f"\n>>> [VAL REPORT] Loss: {avg_loss:.4f} | Class 0 (Imposters): {acc0:.1f} | Class 1 (You): {acc1:.1f}")
         return avg_loss
 
 
