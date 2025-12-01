@@ -1,0 +1,13 @@
+#1 - preproc documentation (pcen)
+#2 - add fc layers + calculate input features for each layer
+#3 - train + analysis
+#4 - change random split +
+#5 - try to improve preprocessing + augmentation
+#6 - weights (penalization of misclassifications)
+#7 - batch normalization 2D (before vs after activations)
+#8 - dropout + Monte Carlo dropout for uncertainty measurement analysis & comparison
+#9 - varying learning rate
+#10 - switching to SGD optimizer
+
+#11 - compare relu to sigmoid
+#12 - skip connections
