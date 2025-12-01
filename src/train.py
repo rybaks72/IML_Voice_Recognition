@@ -37,7 +37,7 @@ def train():
     model_name = "first_trial"
     net = SimpleCNN().to(device)
     criterion = nn.CrossEntropyLoss()
-    learning_rate = 0.001
+    learning_rate = 0.0001
     optimizer = optim.Adam(net.parameters(), lr=learning_rate)
 
     best_model_loss = float('inf')
