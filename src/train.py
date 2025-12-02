@@ -54,7 +54,7 @@ def train():
 
     writer = SummaryWriter(log_dir=f"./tensor_board_outputs/id_{experiment_id}_{model_name}")
 
-    max_epochs = 10
+    max_epochs = 15
     best_epoch = 0
     print("TRAINING START")
     for epoch in range(max_epochs):  # loop over the dataset multiple times, this should be adjusted later
