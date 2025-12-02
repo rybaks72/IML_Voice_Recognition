@@ -43,14 +43,19 @@ def random_data_split(path="./"): #random test-train-validate datasets
 
     for person in class0:
         person_path = glob(f'{person}/*.npz')
-
-        available_sets = [s for s in sets if s['length'] != 0]
-        dataset = rand.choice(available_sets)
-        dataset['length']-=1
-        for path in person_path:
-            specs = np.load(path, allow_pickle=True)
-            dataset['X'].extend(specs['X'])
-            dataset['Y'].extend(specs['Y'])
+        #NOWE
+        train['length'] = 2
+        test['length'] = 1
+        validate['length'] = 1
+        helper(person_path, train, test, validate)
+        ##STARE
+        # available_sets = [s for s in sets if s['length'] != 0]
+        # dataset = rand.choice(available_sets)
+        # dataset['length']-=1
+        # for path in person_path:
+        #     specs = np.load(path, allow_pickle=True)
+        #     dataset['X'].extend(specs['X'])
+        #     dataset['Y'].extend(specs['Y'])
 
     for person in class1:
          person_path = glob(f'{person}/*.npz')
@@ -113,4 +118,4 @@ def convert_to_spectograms(audio, sr, clip_length):
 
     return spectograms
 
-# print(random_data_split())
+print(random_data_split())
