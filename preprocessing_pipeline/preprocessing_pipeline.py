@@ -14,7 +14,7 @@ from pathlib import Path
 
 import torch
 from init import dowload_data, create_directories
-from util import preprocess_data,    convert_to_spectograms
+from util import preprocess_data, convert_to_spectograms, convert_with_pitch_shift
 
 import gc
 #GUIDE
@@ -93,13 +93,18 @@ def create_raw_spectrogram():
         spectrogram = librosa.amplitude_to_db(S, ref=np.max)
         save_spectrogram(path, "./raw_spectrogram", spectrogram, 1)
 
-def spectrogram_conversion_loop(path_list, label, clip_length):
+def spectrogram_conversion_loop(path_list, label, clip_length, pitch=False):
     for path in path_list:
         audio, sr = librosa.load(path)
-        spectrogram = convert_to_spectograms(audio, sr, clip_length)
+        if pitch:
+            spectrogram = convert_with_pitch_shift(audio, sr, clip_length)
+        else:
+            spectrogram = convert_to_spectograms(audio, sr, clip_length)
+
         save_spectrogram(path, "./spectogram_data", spectrogram, label)
         del audio, spectrogram
-    gc.collect()
+        gc.collect()
+
 #function used to process gathered data
 def create_spectrogram_from_data(clip_length):
     dowload_data()
@@ -108,8 +113,11 @@ def create_spectrogram_from_data(clip_length):
     class0 = glob("./data/Class0/*/*.mp3")
     spectrogram_conversion_loop(class0, 0, clip_length)
 
+    augmented_class0 = glob("./data/Class0/*/*.mp3")[1::4]
+    spectrogram_conversion_loop(augmented_class0, 0, clip_length, True)
+
     noise = glob("./data/Random_Noise/*/*.mp3")
-    spectrogram_conversion_loop(noise, 0, clip_length)
+    spectrogram_conversion_loop(noise, 0, clip_length, True)
 
     class1 = glob("./data/Class1/*/*.mp3")
     spectrogram_conversion_loop(class1, 1, clip_length)
