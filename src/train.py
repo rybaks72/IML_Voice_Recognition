@@ -36,7 +36,12 @@ def train():
 
     model_name = "first_trial"
     net = SimpleCNN().to(device)
-    criterion = nn.CrossEntropyLoss()
+
+    # weights = torch.tensor([1.0, data['weight']]).to(device)
+    # criterion = nn.CrossEntropyLoss(weight=weights)
+    # uses softmax, but since we have 2 classes binary is sufficient
+    criterion = nn.BCEWithLogitsLoss(pos_weight=torch.tensor([data["weight"]]).to(device))
+
     learning_rate = 0.0001
     optimizer = optim.Adam(net.parameters(), lr=learning_rate)
 
@@ -94,7 +99,8 @@ def train():
                             'net_state_dict': net.state_dict(),'val_loss': val_loss }, model_path)
                 print(f"BEST (val_loss: {val_loss:.4f}) epoch:{epoch} batch:{i} batch_num:{current_batch_num} train_loss:{loss.item():.4f}")
             else:
-                print(f"No improvement: val_loss: {val_loss:.4f} epoch:{epoch} batch:{i} batch_num:{current_batch_num} train_loss:{loss.item():.4f}")
+                print(f"epoch: {epoch}, batch:{i}")
+                #print(f"No improvement: val_loss: {val_loss:.4f} epoch:{epoch} batch:{i} batch_num:{current_batch_num} train_loss:{loss.item():.4f}")
 
             # return to training mode after validation
             net.train()
@@ -136,10 +142,14 @@ def validate(net: SimpleCNN, criterion, valloader: DataLoader, device):
     with torch.no_grad():
         for inputs,labels in valloader:
             inputs, labels = inputs.to(device), labels.to(device)
+            labels = labels.float().unsqueeze(1)  # for BCE
             outputs = net(inputs)
             loss = criterion(outputs, labels)
             total_loss += loss.item()
-            _, predicted = torch.max(outputs, 1)
+
+            probs = torch.sigmoid(outputs)  # for BCE
+            predicted = (probs > 0.5).long()
+           # _, predicted = torch.max(outputs, 1)
 
             for label, prediction in zip(labels, predicted):
                 if int(label.item()) == 0:
@@ -165,8 +175,12 @@ def calculate_metrics(net: SimpleCNN, dataloader: DataLoader, device):
     with torch.no_grad():
         for inputs,labels in dataloader:
             inputs, labels = inputs.to(device), labels.to(device)
+
             outputs = net(inputs)
-            _,predicted = torch.max(outputs, 1)
+
+            probs = torch.sigmoid(outputs)  # for BCE
+            predicted = (probs > 0.5).long()
+            #_,predicted = torch.max(outputs, 1)
             all_predictions.extend(predicted.cpu().numpy())
             all_labels.extend(labels.cpu().numpy())
 
