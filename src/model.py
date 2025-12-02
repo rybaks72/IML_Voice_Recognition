@@ -26,8 +26,8 @@ class SimpleCNN(nn.Module):
         self.pool = nn.MaxPool2d(2, 2)
         self.fc1 = nn.Linear(9216, 120)
         self.fc2 = nn.Linear(120, 84)
-        self.fc3 = nn.Linear(84, 1)
-        # binary output
+        self.fc3 = nn.Linear(84, 1)# binary output
+
     def forward(self, x): #
         x = self.pool(F.relu(self.conv1(x))) #
         x = self.pool(F.relu(self.conv2(x)))
