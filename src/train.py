@@ -43,9 +43,9 @@ def train():
     best_model_loss = float('inf')
 
     #directory for results csv file
-    results_directory = ".\\results"
+    results_directory = "./results"
     os.makedirs(results_directory, exist_ok=True)
-    filename_results = ".\\results\\tests_results.csv"
+    filename_results = "./results/tests_results.csv"
     # id is assigned automatically based on how many rows we have in the filename_results file
     experiment_id = get_experiment_id(filename_results)
 
