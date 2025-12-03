@@ -38,8 +38,17 @@ def train():
     model_name = "first_trial"
     net = SimpleCNN().to(device)
     #criterion = nn.CrossEntropyLoss()
-    learning_rate = 0.0001
-    optimizer = optim.Adam(net.parameters(), lr=learning_rate)
+    #learning_rate = 0.0001
+    #optimizer = optim.Adam(net.parameters(), lr=learning_rate)
+
+    learning_rate = 1e-4
+    weight_decay = 1e-4
+    optimizer = optim.AdamW(net.parameters(), lr=learning_rate, weight_decay=weight_decay)
+
+    # Scheduler reduces LR if val_loss plateaus
+    scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(
+        optimizer, mode='min', factor=0.5, patience=3, verbose=True
+    )
 
     best_model_loss = float('inf')
 
@@ -72,6 +81,9 @@ def train():
             outputs = net(inputs)
             loss = criterion(outputs, labels)
             loss.backward()
+
+            #gradient clipping for stability
+            torch.nn.utils.clip_grad_norm_(net.parameters(), max_norm=1.0)
             optimizer.step()
 
             running_loss += loss.item()
@@ -79,7 +91,7 @@ def train():
             current_batch_num = epoch * len(train_loader) + i
 
             val_loss = validate(net, criterion, val_loader, device)
-
+            scheduler.step(val_loss)
             # one plot with both
             writer.add_scalars('loss', {
                 'train': loss.item(),

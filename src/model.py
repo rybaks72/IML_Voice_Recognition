@@ -43,7 +43,7 @@ class SimpleCNN(nn.Module):
 
         self.fc1 = nn.Linear(flat_dim, 120)
 
-        self.dropout1 = nn.Dropout(p=0.2)
+        self.dropout1 = nn.Dropout(p=0.3)
 
         self.fc2 = nn.Linear(120, 84)
 
