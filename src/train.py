@@ -70,6 +70,7 @@ def train():
     for epoch in range(max_epochs):  # loop over the dataset multiple times, this should be adjusted later
         net.train()
         running_loss = 0.0
+        final_val_loss = float('inf')
         for i, data in enumerate(train_loader, 0):
 
             inputs, labels = data
@@ -91,7 +92,8 @@ def train():
             current_batch_num = epoch * len(train_loader) + i
 
             val_loss = validate(net, criterion, val_loader, device)
-            scheduler.step(val_loss)
+            final_val_loss = val.loss
+
             # one plot with both
             writer.add_scalars('loss', {
                 'train': loss.item(),
@@ -113,7 +115,7 @@ def train():
             net.train()
 
         print(f"Epoch {epoch+1}, loss: {running_loss/len(train_loader):.3f}")
-
+        scheduler.step(final_val_loss)
 
     print("Testing the best model")
     net.load_state_dict((torch.load(f"./models/id_{experiment_id}_{model_name}.pth", map_location=device))['net_state_dict'])
