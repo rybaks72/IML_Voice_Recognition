@@ -33,10 +33,11 @@ def train():
     train_loader = DataLoader(TensorDataset(x_train, y_train), batch_size=batch_size, shuffle=True)
     val_loader = DataLoader(TensorDataset(x_valid, y_valid), batch_size=8, shuffle=False)
     test_loader = DataLoader(TensorDataset(x_test, y_test), batch_size=8, shuffle=False)
-
+    weights = torch.tensor([1.0, data['weight'] * 0.8]).to(device)
+    criterion = nn.CrossEntropyLoss(weight=weights)
     model_name = "first_trial"
     net = SimpleCNN().to(device)
-    criterion = nn.CrossEntropyLoss()
+    #criterion = nn.CrossEntropyLoss()
     learning_rate = 0.0001
     optimizer = optim.Adam(net.parameters(), lr=learning_rate)
 

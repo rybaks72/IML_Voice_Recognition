@@ -10,15 +10,15 @@ class SimpleCNN(nn.Module):
         super().__init__()
         self.conv1 = nn.Sequential( nn.Conv2d(1, 16, 5),
                                     #nn.BatchNorm2d(16),
-                                    nn.ReLU(),
+                                    nn.ReLU())
                                     #nn.BatchNorm2d(16),
-                                    nn.MaxPool2d(2, 2) )
+                                    #nn.MaxPool2d(2, 2) )
 
         self.conv2 = nn.Sequential( nn.Conv2d(16, 32, 5),
                                     #nn.BatchNorm2d(32),
-                                    nn.ReLU())
+                                    nn.ReLU(),
                                     #nn.BatchNorm2d(32),
-                                    #nn.MaxPool2d(2, 2) )
+                                    nn.MaxPool2d(2, 2) )
 
         self.conv3 = nn.Sequential( nn.Conv2d(32, 64, 5),
                                     #nn.BatchNorm2d(64),
@@ -27,9 +27,9 @@ class SimpleCNN(nn.Module):
                                     nn.MaxPool2d(2, 2) )
         self.conv4 = nn.Sequential( nn.Conv2d(64, 128, 5),
                                       # #nn.BatchNorm2d(128),
-                                    nn.ReLU())
+                                    nn.ReLU(),
                                       # nn.BatchNorm2d(128),
-                                    #nn.MaxPool2d(2, 2) )
+                                    nn.MaxPool2d(2, 2) )
         # input: 1 channel spectrogram (grayscale)
         self.pool = nn.MaxPool2d(2, 2)
 
