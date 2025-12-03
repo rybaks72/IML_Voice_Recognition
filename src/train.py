@@ -42,13 +42,10 @@ def train():
     #optimizer = optim.Adam(net.parameters(), lr=learning_rate)
 
     learning_rate = 1e-4
-    weight_decay = 1e-4
+    weight_decay = 1e-5
     optimizer = optim.AdamW(net.parameters(), lr=learning_rate, weight_decay=weight_decay)
 
-    # Scheduler reduces LR if val_loss plateaus
-    scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(
-        optimizer, mode='min', factor=0.5, patience=3
-    )
+
 
     best_model_loss = float('inf')
 
@@ -83,8 +80,6 @@ def train():
             loss = criterion(outputs, labels)
             loss.backward()
 
-            #gradient clipping for stability
-            torch.nn.utils.clip_grad_norm_(net.parameters(), max_norm=1.0)
             optimizer.step()
 
             running_loss += loss.item()
@@ -115,7 +110,7 @@ def train():
             net.train()
 
         print(f"Epoch {epoch+1}, loss: {running_loss/len(train_loader):.3f}")
-        scheduler.step(final_val_loss)
+
 
     print("Testing the best model")
     net.load_state_dict((torch.load(f"./models/id_{experiment_id}_{model_name}.pth", map_location=device))['net_state_dict'])
