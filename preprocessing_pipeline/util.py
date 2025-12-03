@@ -19,12 +19,14 @@ def helper(path_lists, train, test, validate):
     return count
 
 #INPUT: path to spectrogram data
-def random_data_split(path="./"): #random test-train-validate datasets
+def random_data_split(path=".//"): #random test-train-validate datasets
     class0 = glob(f"{path}/spectogram_data/Class0/*")
     class1 = glob(f"{path}/spectogram_data/Class1/*")
     noise_noise = glob(f"{path}/spectogram_data/Random_Noise/noise/*")
     noise_people = glob(f"{path}/spectogram_data/Random_Noise/people/*")
-    print(path)
+    print(class1)
+
+    print(f"{path}/spectogram_data/Class1/*")
     train = {
         'X': [],
         'Y': [],
@@ -48,15 +50,19 @@ def random_data_split(path="./"): #random test-train-validate datasets
 
     for person in class0:
         person_path = glob(f'{person}/*.npz')
-
-        available_sets = [s for s in sets if s['length'] != 0]
-        dataset = rand.choice(available_sets)
-        dataset['length']-=1
-        for path in person_path:
-            specs = np.load(path, allow_pickle=True)
-            dataset['X'].extend(specs['X'])
-            dataset['Y'].extend(specs['Y'])
-            class0_count += len(specs["Y"])
+        #NOWE
+        train['length'] = 2
+        test['length'] = 1
+        validate['length'] = 1
+        class0_count += helper(person_path, train, test, validate)
+        ##STARE
+        # available_sets = [s for s in sets if s['length'] != 0]
+        # dataset = rand.choice(available_sets)
+        # dataset['length']-=1
+        # for path in person_path:
+        #     specs = np.load(path, allow_pickle=True)
+        #     dataset['X'].extend(specs['X'])
+        #     dataset['Y'].extend(specs['Y'])
 
     for person in class1:
          person_path = glob(f'{person}/*.npz')
@@ -114,6 +120,7 @@ def convert_to_spectograms(audio, sr, clip_length):
     for sample in y_clips:
         S = librosa.feature.melspectrogram(y=sample, sr=sr, n_mels=128, )
         S_pcen = librosa.pcen(S, sr=sr, time_constant=0.4,gain=0.4)
+
         spectograms.append(S_pcen)
 
     return spectograms
@@ -128,4 +135,4 @@ def convert_with_pitch_shift(audio, sr, clip_length):
     spectrogram.extend(convert_to_spectograms(upper, sr, clip_length))
 
     return spectrogram
-print(random_data_split())
+# print(random_data_split())

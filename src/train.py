@@ -36,21 +36,16 @@ def train():
 
     model_name = "first_trial"
     net = SimpleCNN().to(device)
-
-    # weights = torch.tensor([1.0, data['weight']]).to(device)
-    # criterion = nn.CrossEntropyLoss(weight=weights)
-    # uses softmax, but since we have 2 classes binary is sufficient
-    criterion = nn.BCEWithLogitsLoss(pos_weight=torch.tensor([data["weight"]]).to(device))
-
+    criterion = nn.CrossEntropyLoss()
     learning_rate = 0.0001
     optimizer = optim.Adam(net.parameters(), lr=learning_rate)
 
     best_model_loss = float('inf')
 
     #directory for results csv file
-    results_directory = ".\\results"
+    results_directory = "./results"
     os.makedirs(results_directory, exist_ok=True)
-    filename_results = ".\\results\\tests_results.csv"
+    filename_results = "./results/tests_results.csv"
     # id is assigned automatically based on how many rows we have in the filename_results file
     experiment_id = get_experiment_id(filename_results)
 
@@ -59,7 +54,7 @@ def train():
 
     writer = SummaryWriter(log_dir=f"./tensor_board_outputs/id_{experiment_id}_{model_name}")
 
-    max_epochs = 10
+    max_epochs = 15
     best_epoch = 0
     print("TRAINING START")
     for epoch in range(max_epochs):  # loop over the dataset multiple times, this should be adjusted later
@@ -99,8 +94,7 @@ def train():
                             'net_state_dict': net.state_dict(),'val_loss': val_loss }, model_path)
                 print(f"BEST (val_loss: {val_loss:.4f}) epoch:{epoch} batch:{i} batch_num:{current_batch_num} train_loss:{loss.item():.4f}")
             else:
-                print(f"epoch: {epoch}, batch:{i}")
-                #print(f"No improvement: val_loss: {val_loss:.4f} epoch:{epoch} batch:{i} batch_num:{current_batch_num} train_loss:{loss.item():.4f}")
+                print(f"No improvement: val_loss: {val_loss:.4f} epoch:{epoch} batch:{i} batch_num:{current_batch_num} train_loss:{loss.item():.4f}")
 
             # return to training mode after validation
             net.train()
@@ -142,14 +136,10 @@ def validate(net: SimpleCNN, criterion, valloader: DataLoader, device):
     with torch.no_grad():
         for inputs,labels in valloader:
             inputs, labels = inputs.to(device), labels.to(device)
-            labels = labels.float().unsqueeze(1)  # for BCE
             outputs = net(inputs)
             loss = criterion(outputs, labels)
             total_loss += loss.item()
-
-            probs = torch.sigmoid(outputs)  # for BCE
-            predicted = (probs > 0.5).long()
-           # _, predicted = torch.max(outputs, 1)
+            _, predicted = torch.max(outputs, 1)
 
             for label, prediction in zip(labels, predicted):
                 if int(label.item()) == 0:
@@ -175,12 +165,8 @@ def calculate_metrics(net: SimpleCNN, dataloader: DataLoader, device):
     with torch.no_grad():
         for inputs,labels in dataloader:
             inputs, labels = inputs.to(device), labels.to(device)
-
             outputs = net(inputs)
-
-            probs = torch.sigmoid(outputs)  # for BCE
-            predicted = (probs > 0.5).long()
-            #_,predicted = torch.max(outputs, 1)
+            _,predicted = torch.max(outputs, 1)
             all_predictions.extend(predicted.cpu().numpy())
             all_labels.extend(labels.cpu().numpy())
 

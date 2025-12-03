@@ -114,10 +114,10 @@ def create_spectrogram_from_data(clip_length):
     spectrogram_conversion_loop(class0, 0, clip_length)
 
     augmented_class0 = glob("./data/Class0/*/*.mp3")[1::4]
-    spectrogram_conversion_loop(augmented_class0, 0, clip_length, True)
+    spectrogram_conversion_loop(augmented_class0, 0, clip_length)
 
     noise = glob("./data/Random_Noise/*/*.mp3")
-    spectrogram_conversion_loop(noise, 0, clip_length, True)
+    spectrogram_conversion_loop(noise, 0, clip_length)
 
     class1 = glob("./data/Class1/*/*.mp3")
     spectrogram_conversion_loop(class1, 1, clip_length)
