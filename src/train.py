@@ -45,7 +45,10 @@ def train():
     weight_decay = 1e-5
     optimizer = optim.AdamW(net.parameters(), lr=learning_rate, weight_decay=weight_decay)
 
-
+    #scheduler bc it seems that it stabilises too fast but only sometimes
+    scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(
+        optimizer, T_max=30, eta_min=1e-6
+    )
 
     best_model_loss = float('inf')
 
@@ -61,7 +64,7 @@ def train():
 
     writer = SummaryWriter(log_dir=f"./tensor_board_outputs/id_{experiment_id}_{model_name}")
 
-    max_epochs = 15
+    max_epochs = 30
     best_epoch = 0
     print("TRAINING START")
     for epoch in range(max_epochs):  # loop over the dataset multiple times, this should be adjusted later
@@ -108,7 +111,7 @@ def train():
 
             # return to training mode after validation
             net.train()
-
+        scheduler.step()
         print(f"Epoch {epoch+1}, loss: {running_loss/len(train_loader):.3f}")
 
 
