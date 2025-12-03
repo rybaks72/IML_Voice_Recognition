@@ -47,7 +47,7 @@ def train():
 
     # Scheduler reduces LR if val_loss plateaus
     scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(
-        optimizer, mode='min', factor=0.5, patience=3, verbose=True
+        optimizer, mode='min', factor=0.5, patience=3
     )
 
     best_model_loss = float('inf')
