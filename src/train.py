@@ -42,13 +42,9 @@ def train():
     #optimizer = optim.Adam(net.parameters(), lr=learning_rate)
 
     learning_rate = 1e-4
-    weight_decay = 1e-5
+    weight_decay = 5e-5
     optimizer = optim.AdamW(net.parameters(), lr=learning_rate, weight_decay=weight_decay)
 
-    #scheduler bc it seems that it stabilises too fast but only sometimes
-    scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(
-        optimizer, T_max=30, eta_min=1e-6
-    )
 
     best_model_loss = float('inf')
 
@@ -111,7 +107,6 @@ def train():
 
             # return to training mode after validation
             net.train()
-        scheduler.step()
         print(f"Epoch {epoch+1}, loss: {running_loss/len(train_loader):.3f}")
 
 
