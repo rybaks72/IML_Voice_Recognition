@@ -42,8 +42,16 @@ class SimpleCNN(nn.Module):
             flat_dim = out.numel()
 
         self.fc1 = nn.Linear(flat_dim, 120)
+
+        self.dropout1 = nn.Dropout(p=0.5)
+
         self.fc2 = nn.Linear(120, 84)
+
+        self.dropout2 = nn.Dropout(p=0.5)
+
         self.fc3 = nn.Linear(84, 2)# binary output
+
+
 
     def forward(self, x): #
         # x = self.pool(F.relu(self.conv1(x))) #
@@ -54,6 +62,8 @@ class SimpleCNN(nn.Module):
         x = self.conv4(x)
         x = x.view(x.shape[0], -1) #a bit more robust
         x = F.relu(self.fc1(x))
+        x = self.dropout1(x)
         x = F.relu(self.fc2(x))
+        x = self.dropout2(x)
         x = self.fc3(x)
         return x
