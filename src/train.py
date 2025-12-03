@@ -92,7 +92,7 @@ def train():
             current_batch_num = epoch * len(train_loader) + i
 
             val_loss = validate(net, criterion, val_loader, device)
-            final_val_loss = val.loss
+            final_val_loss = val_loss
 
             # one plot with both
             writer.add_scalars('loss', {
