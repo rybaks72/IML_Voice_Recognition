@@ -29,7 +29,7 @@ def train():
     x_train = x_train.float()
     x_valid = x_valid.float()
     x_test = x_test.float()
-    batch_size = 64
+    batch_size =128
     train_loader = DataLoader(TensorDataset(x_train, y_train), batch_size=batch_size, shuffle=True)
     val_loader = DataLoader(TensorDataset(x_valid, y_valid), batch_size=8, shuffle=False)
     test_loader = DataLoader(TensorDataset(x_test, y_test), batch_size=8, shuffle=False)
