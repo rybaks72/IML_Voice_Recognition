@@ -18,15 +18,35 @@ def helper(path_lists, train, test, validate):
         count += len(specs["Y"])
     return count
 
+RMS = None
+
+def get_rms():
+    global RMS
+    if RMS is not None:
+        return RMS
+    files = glob("./data/*/*/*.mp3")
+    total = 0; samples = 0
+    for file in files:
+        y, sr = librosa.load(file, sr=None)
+        total += np.sum(y**2)
+        samples += len(y)
+    RMS = np.sqrt(total/samples)
+    return np.sqrt(total/samples)
+
+def rms_normalize(audio,rms):
+    clip_rms = np.sqrt(np.mean(audio**2))
+    scale = rms / clip_rms if clip_rms!=0 else rms
+    return audio * scale
+
 #INPUT: path to spectrogram data
 def random_data_split(path=".//"): #random test-train-validate datasets
     class0 = glob(f"{path}/spectogram_data/Class0/*")
     class1 = glob(f"{path}/spectogram_data/Class1/*")
     noise_noise = glob(f"{path}/spectogram_data/Random_Noise/noise/*")
     noise_people = glob(f"{path}/spectogram_data/Random_Noise/people/*")
-    print(class1)
+    #print(class1)
 
-    print(f"{path}/spectogram_data/Class1/*")
+    #print(f"{path}/spectogram_data/Class1/*")
     train = {
         'X': [],
         'Y': [],
@@ -98,9 +118,10 @@ def random_data_split(path=".//"): #random test-train-validate datasets
     }
 
 #preprocessing - normalize, trim, crop into 1 min audios, split into 3s clips
-def preprocess_data(audio, sr, clip_length):
+def preprocess_data(audio, sr, clip_length, rms=True):
     #y, sr = librosa.load(audio) #NOTE: librosa.load by default standardizes the sr to 22050 HZ
-    y_norm = librosa.util.normalize(audio)
+
+    y_norm = rms_normalize(audio, get_rms()) if rms else librosa.util.normalize(audio)
 
     y_trimmed, _ = librosa.effects.trim(y_norm, top_db=20)
     intervals = librosa.effects.split(y_trimmed, top_db=20)
