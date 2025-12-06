@@ -89,28 +89,28 @@ class ResNet(nn.Module):
     # num_classes: number of output classes (2 for Imposter/You)
     def __init__(self, block, num_blocks, num_classes=2):
         super(ResNet, self).__init__()
-        self.in_channels = 64
+        self.in_channels = 32
 
         # Initial Convolutional Layer (handles 1-channel spectrogram input)
         # kernel_size=7, stride=2, MaxPool: typical for processing large images (spectrograms)
         self.conv1 = nn.Sequential(
-            nn.Conv2d(1, 64, kernel_size=7, stride=2, padding=3, bias=False),  # Input channel set to 1
-            nn.BatchNorm2d(64),
+            nn.Conv2d(1, 32, kernel_size=7, stride=2, padding=3, bias=False),  # Input channel set to 1
+            nn.BatchNorm2d(32),
             nn.ReLU(inplace=True),
             nn.MaxPool2d(kernel_size=3, stride=2, padding=1)
         )
 
         # Residual Blocks Layers
-        self.layer1 = self._make_layer(block, 64, num_blocks[0], stride=1)
-        self.layer2 = self._make_layer(block, 128, num_blocks[1], stride=2)
-        self.layer3 = self._make_layer(block, 256, num_blocks[2], stride=2)
-        self.layer4 = self._make_layer(block, 512, num_blocks[3], stride=2)
+        self.layer1 = self._make_layer(block, 32, num_blocks[0], stride=1)
+        self.layer2 = self._make_layer(block, 64, num_blocks[1], stride=2)
+        self.layer3 = self._make_layer(block, 128, num_blocks[2], stride=2)
+        #self.layer4 = self._make_layer(block, 512, num_blocks[3], stride=2)
 
         # Global Average Pooling (used instead of Flattening to normalize output size)
         self.avgpool = nn.AdaptiveAvgPool2d((1, 1))
 
         # Final Fully Connected Layer (Output classes set to 2)
-        self.fc = nn.Linear(512 * block.expansion, num_classes)
+        self.fc = nn.Linear(128 * block.expansion, num_classes)
 
     def _make_layer(self, block, out_channels, num_blocks, stride):
         # Create a list of strides for the blocks in the layer (only the first block uses stride > 1)
@@ -127,7 +127,7 @@ class ResNet(nn.Module):
         out = self.layer1(out)
         out = self.layer2(out)
         out = self.layer3(out)
-        out = self.layer4(out)
+       # out = self.layer4(out)
 
         # Apply Global Average Pooling
         out = self.avgpool(out)
@@ -143,4 +143,5 @@ class ResNet(nn.Module):
 # Chose ResNet18 b/c it's the fastest to train
 def ResNet18():
     # Number of blocks in each layer for ResNet-18: [2, 2, 2, 2]
-    return ResNet(BasicBlock, [2, 2, 2, 2])
+    # lets change to [1, 1, 1, 1]
+    return ResNet(BasicBlock, [2,2, 2])
