@@ -101,7 +101,7 @@ def spectrogram_conversion_loop(path_list, label, clip_length, pitch=False):
         else:
             spectrogram = convert_to_spectograms(audio, sr, clip_length)
 
-        save_spectrogram(path, "./spectogram_data", spectrogram, label)
+        save_spectrogram(path, "./spectogram_data", spectrogram, label if pitch==False else 0)
         del audio, spectrogram
         gc.collect()
 
@@ -111,10 +111,11 @@ def create_spectrogram_from_data(clip_length):
     create_directories("./spectogram_data")
 
     class0 = glob("./data/Class0/*/*.mp3")
-    spectrogram_conversion_loop(class0, 0, clip_length)
+    spectrogram_conversion_loop(class0, 0, clip_length, pitch=True)
+    class1 = glob("./data/Class1/*/*.mp3")
 
     augmented_class0 = glob("./data/Class0/*/*.mp3")[1::4]
-    spectrogram_conversion_loop(augmented_class0, 0, clip_length)
+    spectrogram_conversion_loop(augmented_class0, 0, clip_length, pitch=True)
 
     noise = glob("./data/Random_Noise/*/*.mp3")
     spectrogram_conversion_loop(noise, 0, clip_length)

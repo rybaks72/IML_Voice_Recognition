@@ -8,42 +8,20 @@ from src.model import SimpleCNN
 from torch.utils.tensorboard import SummaryWriter
 import csv
 import os
+from src.train_util import time_mask, time_shift, freq_mask, get_threshold_roc
 from datetime import datetime
 from preprocessing_pipeline.util import random_data_split
 
-from sklearn.metrics import roc_curve, roc_auc_score
+def augment_batch(x):
+    if torch.rand(1) < 0.5:
+        x = time_mask(x, max_width=10)
+    if torch.rand(1) < 0.5:
+        x = freq_mask(x, max_height=5)
+    if torch.rand(1) < 0.5:
+        x = time_shift(x, max_shift=5)
+    return x
 
-def get_threshold_roc(net, dataloader, device):
-    net.eval()
-    all_probabilities, all_labels = [], []
-
-    with torch.no_grad():                                       # Disable gradients for speed
-        for x, y in dataloader:
-            x = x.to(device)
-            y = y.to(device).float().view(-1)
-            logits = net(x)                                     # Raw model outputs (before sigmoid)
-            probs = torch.sigmoid(logits).view(-1).cpu().numpy() # Convert logits → probabilities → numpy
-            all_probabilities.append(probs)
-            all_labels.append(y.cpu().numpy())
-
-    all_probabilities  = np.concatenate(all_probabilities)                      # Combine batches into full arrays
-    all_labels = np.concatenate(all_labels)
-
-    fpr, tpr, thresholds = roc_curve(all_labels, all_probabilities)     # Compute ROC points & matching thresholds
-    auc = roc_auc_score(all_labels, all_probabilities)                  # Overall ROC quality metric = area under the roc curve = number that summarizes how well the model separates the two classes across all possible thresholds: 1 = perfect separation; 0.5 = guess game; 0.5 < = model is inverted
-    #Basically if auc high =>  the model would still perform well, despite not having the exact optimal threshold
-                    # if low => no threshold will save you cuz the classes overlap too much in probability space
-
-    youden = tpr - fpr                                          # Youden's J (best balance of FPR & TPR)
-    best_idx = np.argmax(youden)
-    threshold = thresholds[best_idx]
-
-    print(f"AUC={auc:.4f} | Best threshold={threshold:.4f} | TPR={tpr[best_idx]:.3f} | FPR={fpr[best_idx]:.3f}")
-
-    return threshold
-
-
-def train():
+def train(epoch_queue = None):
     #model, inputs and labels have to be on the same device
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     print(f"Using device: {device}")
@@ -67,14 +45,14 @@ def train():
 
     weights = torch.tensor([1.0, data['weight']]).to(device)
     #criterion = nn.CrossEntropyLoss(weight=weights)
-    criterion = nn.BCEWithLogitsLoss(pos_weight=torch.tensor([data["weight"]]).to(device))
+    criterion = nn.BCEWithLogitsLoss(pos_weight=torch.tensor([np.sqrt(data["weight"])]).to(device))
     model_name = "first_trial_bce"
     net = SimpleCNN().to(device)
     #criterion = nn.CrossEntropyLoss()
     #learning_rate = 0.0001
     #optimizer = optim.Adam(net.parameters(), lr=learning_rate)
 
-    learning_rate = 0.0003
+    learning_rate = 0.0001
     weight_decay = 5e-5
     optimizer = optim.AdamW(net.parameters(), lr=learning_rate, weight_decay=weight_decay)
 
@@ -82,23 +60,26 @@ def train():
         optimizer,
         mode='min',
         factor=0.5,  # shrink LR by half
-        patience=3,  # wait 3 epochs of no improvement
+        patience=4,  # wait 3 epochs of no improvement
         min_lr=1e-7,  # don't shrink below this
     )
 
     best_model_loss = float('inf')
 
     #directory for results csv file
-    results_directory = "./results"
+    #results_directory = "./results"
+    results_directory = "./results-single-val"
     os.makedirs(results_directory, exist_ok=True)
-    filename_results = "./results/tests_results.csv"
+    filename_results = f"./{results_directory}/tests_results.csv"
     # id is assigned automatically based on how many rows we have in the filename_results file
     experiment_id = get_experiment_id(filename_results)
 
     #directory with models
     os.makedirs("./models", exist_ok=True)
+    os.makedirs("./models-single-val", exist_ok=True)
 
     writer = SummaryWriter(log_dir=f"./tensor_board_outputs/id_{experiment_id}_{model_name}")
+    writer2 = SummaryWriter(log_dir=f"./tensor_board_outputs-single-val/id_{experiment_id}_{model_name}")
 
     max_epochs = 30
     best_epoch = 0
@@ -107,13 +88,13 @@ def train():
         net.train()
         running_loss = 0.0
         final_val_loss = float('inf') # what is trhis for kasia?
-        total_val_loss = 0
         for i, data in enumerate(train_loader, 0):
 
             inputs, labels = data
 
-            print(f"inputs shape: {inputs.shape}")
+            #print(f"inputs shape: {inputs.shape}")
             inputs, labels = inputs.float().to(device), labels.to(device)
+            inputs = augment_batch(inputs)
             labels = labels.float().unsqueeze(1)
             optimizer.zero_grad()
 
@@ -126,34 +107,46 @@ def train():
             running_loss += loss.item()
 
             current_batch_num = epoch * len(train_loader) + i
+            #
+            # val_loss = validate(net, criterion, val_loader, device)
+            # #final_val_loss = val_loss
+            #
+            # # one plot with both
+            # writer.add_scalars('loss', {
+            #     'train': loss.item(),
+            #     'validation': val_loss
+            # }, current_batch_num)
 
-            val_loss = validate(net, criterion, val_loader, device)
-            final_val_loss = val_loss
-            total_val_loss += val_loss
+        #save the best model yet
+        print(f"Epoch {epoch}, loss: {running_loss / len(train_loader):.3f}")
+        loss = validate(net, criterion, val_loader, device)
+        if loss < best_model_loss:
+            best_model_loss = loss
+            best_epoch = epoch
+            model_path = f"./models-single-val/id_{experiment_id}_{model_name}.pth"
+            torch.save({'epoch': epoch, 'net_state_dict': net.state_dict(),'val_loss': loss }, model_path)
+            print(f"BEST (val_loss: {loss:.4f}) epoch:{epoch} train_loss:{running_loss/len(train_loader):.4f}\n")
+        else:
+            print(f"No improvement: val_loss: {loss:.4f} epoch:{epoch}\n")
 
-            # one plot with both
-            writer.add_scalars('loss', {
-                'train': loss.item(),
-                'validation': val_loss
-            }, current_batch_num)
+        # return to training mode after validation
+        net.train()
+        if epoch_queue is not None:
+            epoch_queue.put({"msg": epoch + 1,
+                             "loss": running_loss / len(train_loader),
+                             "val_loss": loss,})
 
-            #save the best model yet
-            if val_loss < best_model_loss:
-                best_model_loss = val_loss
-                best_epoch = epoch
-                model_path = f"./models/id_{experiment_id}_{model_name}.pth"
-                torch.save({'epoch': epoch, 'batch': i, 'batch_num': current_batch_num,
-                            'net_state_dict': net.state_dict(),'val_loss': val_loss }, model_path)
-                print(f"BEST (val_loss: {val_loss:.4f}) epoch:{epoch} batch:{i} batch_num:{current_batch_num} train_loss:{loss.item():.4f}")
-            else:
-                print(f"No improvement: val_loss: {val_loss:.4f} epoch:{epoch} batch:{i} batch_num:{current_batch_num} train_loss:{loss.item():.4f}")
+        scheduler.step(loss)
 
-            # return to training mode after validation
-            net.train()
-        scheduler.step(total_val_loss/len(train_loader))
-        print(f"Epoch {epoch+1}, loss: {running_loss/len(train_loader):.3f}")
+        writer2.add_scalars('loss', {
+            'train': running_loss/len(train_loader),
+            'validation': loss
+        }, epoch)
 
-    net.load_state_dict((torch.load(f"./models/id_{experiment_id}_{model_name}.pth", map_location=device))['net_state_dict'])
+    if epoch_queue is not None:
+        epoch_queue.put({"msg": "DONE"})
+
+    net.load_state_dict((torch.load(f"./models-single-val/id_{experiment_id}_{model_name}.pth", map_location=device))['net_state_dict'])
     threshold = get_threshold_roc(net, val_loader, device)
     print("Testing the best model...")
     test_metrics = calculate_metrics(net, test_loader, device, threshold)
@@ -174,12 +167,13 @@ def train():
     print("TEST END")
 
     writer.close()
+    writer2.close()
 
 
 
 
 
-def validate(net: SimpleCNN, criterion, valloader: DataLoader, device):
+def validate(net: SimpleCNN, criterion, valloader: DataLoader, device, threshold=0.5):
     net.eval()
     total_loss = 0.0
     correct_class0 = 0
@@ -195,7 +189,7 @@ def validate(net: SimpleCNN, criterion, valloader: DataLoader, device):
             total_loss += loss.item()
 
             probs = torch.sigmoid(outputs)  # for BCE
-            predicted = (probs > 0.5).long()
+            predicted = (probs > threshold).long()
             #_, predicted = torch.max(outputs, 1)
 
             for label, prediction in zip(labels, predicted):
@@ -211,7 +205,7 @@ def validate(net: SimpleCNN, criterion, valloader: DataLoader, device):
         acc1 = correct_class1 / total_class1 if total_class1 > 0 else 0
 
         # Log to TensorBoard
-        print(f"\n>>> [VAL REPORT] Loss: {avg_loss:.4f} | Class 0 (Imposters): {acc0:.1f} | Class 1 (You): {acc1:.1f}")
+        print(f">>> [VAL REPORT] Loss: {avg_loss:.4f} | Class 0 (Imposters): {acc0:.1f} | Class 1 (You): {acc1:.1f}")
         return avg_loss
 
 
