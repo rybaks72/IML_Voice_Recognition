@@ -4,13 +4,17 @@ import torch.optim as optim
 from torch.utils.data import TensorDataset, DataLoader
 import numpy as np
 from sklearn.metrics import f1_score, confusion_matrix, accuracy_score, precision_score, recall_score
+
+from src.mobilenet_model import MobileNetV2
 from src.model import SimpleCNN
 from torch.utils.tensorboard import SummaryWriter
 import csv
 import os
 from datetime import datetime
 from preprocessing_pipeline.util import random_data_split
-
+from src.resnet_model import ResNet18
+from src.googlenet_model import GoogleNet
+from src.mobilenet_model import MobileNetV2
 
 def train():
     #model, inputs and labels have to be on the same device
@@ -35,8 +39,19 @@ def train():
     test_loader = DataLoader(TensorDataset(x_test, y_test), batch_size=8, shuffle=False)
     weights = torch.tensor([1.0, data['weight']]).to(device)
     criterion = nn.CrossEntropyLoss(weight=weights)
-    model_name = "first_trial"
-    net = SimpleCNN().to(device)
+
+    #model_name = "first_trial"
+    #net = SimpleCNN().to(device)
+
+    #model_name = "resnet_trial"
+    #net = ResNet().to(device)
+
+    model_name = "googlenet_trial"
+    net = GoogleNet().to(device)
+
+    # model_name = "mobilenet_trial"
+    # net = MobileNetV2().to(device)
+
     #criterion = nn.CrossEntropyLoss()
     learning_rate = 0.0001
     optimizer = optim.Adam(net.parameters(), lr=learning_rate)
