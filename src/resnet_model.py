@@ -110,7 +110,7 @@ class ResNet(nn.Module):
         self.avgpool = nn.AdaptiveAvgPool2d((1, 1))
 
         #testing dropout layer
-        self.dropout = nn.Dropout(p=0.7)
+        self.dropout = nn.Dropout(p=0.5)
 
         # Final Fully Connected Layer (Output classes set to 2)
         self.fc = nn.Linear(128 * block.expansion, num_classes)

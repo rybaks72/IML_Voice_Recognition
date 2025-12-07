@@ -43,7 +43,7 @@ def train():
     #model_name = "first_trial"
     #net = SimpleCNN().to(device)
 
-    model_name = "resnet_trial_222_32_drop_0.7"
+    model_name = "resnet_trial_222_32_drop_0.5_wd_0.01"
     net = ResNet18().to(device)
 
     # model_name = "googlenet_trial"
@@ -54,7 +54,8 @@ def train():
 
     #criterion = nn.CrossEntropyLoss()
     learning_rate = 0.0001
-    optimizer = optim.Adam(net.parameters(), lr=learning_rate)
+    weight_dec = 0.01
+    optimizer = optim.Adam(net.parameters(), lr=learning_rate, weight_decay=weight_dec)
 
     best_model_loss = float('inf')
 
@@ -133,7 +134,7 @@ def train():
                                    batch_size= batch_size,
                                    max_epochs=max_epochs,
                                    best_epoch=best_epoch,
-                                   notes="222 32 dropout 0.7")
+                                   notes="weight decay 0.01")
                                    
     print("TEST END")
 
