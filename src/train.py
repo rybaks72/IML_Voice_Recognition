@@ -43,7 +43,7 @@ def train():
     #model_name = "first_trial"
     #net = SimpleCNN().to(device)
 
-    model_name = "resnet_trial_222_32_input"
+    model_name = "resnet_trial_333_32_input"
     net = ResNet18().to(device)
 
     # model_name = "googlenet_trial"
@@ -133,7 +133,7 @@ def train():
                                    batch_size= batch_size,
                                    max_epochs=max_epochs,
                                    best_epoch=best_epoch,
-                                   notes="input 64 again to test")
+                                   notes="333 32 input")
                                    
     print("TEST END")
 

@@ -144,4 +144,4 @@ class ResNet(nn.Module):
 def ResNet18():
     # Number of blocks in each layer for ResNet-18: [2, 2, 2, 2]
     # lets change to [1, 1, 1, 1]
-    return ResNet(BasicBlock, [2,2, 2])
+    return ResNet(BasicBlock, [3,3,3])
