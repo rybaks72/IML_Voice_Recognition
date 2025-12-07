@@ -60,7 +60,7 @@ class BasicBlock(nn.Module):
             self.shortcut = nn.Sequential(
                 nn.Conv2d(in_channels, self.expansion * out_channels,
                           kernel_size=1, stride=stride, bias=False),
-                nn.BatchNorm2d(self.expansion * out_channels)
+               # nn.BatchNorm2d(self.expansion * out_channels)
             )
 
     def forward(self, x):
@@ -69,11 +69,11 @@ class BasicBlock(nn.Module):
 
         # Pass through the two convolutional layers
         out = self.conv1(x)
-        out = self.bn1(out)
+      #  out = self.bn1(out)
         out = self.relu(out)
 
         out = self.conv2(out)
-        out = self.bn2(out)
+     #   out = self.bn2(out)
 
         # Add the shortcut (Residual connection: H(x) = F(x) + x)
         out += self.shortcut(identity)
@@ -95,7 +95,7 @@ class ResNet(nn.Module):
         # kernel_size=7, stride=2, MaxPool: typical for processing large images (spectrograms)
         self.conv1 = nn.Sequential(
             nn.Conv2d(1, 32, kernel_size=7, stride=2, padding=3, bias=False),  # Input channel set to 1
-            nn.BatchNorm2d(32),
+            #nn.BatchNorm2d(32),
             nn.ReLU(inplace=True),
             nn.MaxPool2d(kernel_size=3, stride=2, padding=1)
         )

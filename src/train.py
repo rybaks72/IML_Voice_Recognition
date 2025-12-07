@@ -43,7 +43,7 @@ def train():
     #model_name = "first_trial"
     #net = SimpleCNN().to(device)
 
-    model_name = "resnet_trial_222_32_drop_0.5_wd_0.01"
+    model_name = "resnet_trial_111_64_drop_0.5_adam_lr_0.0001_nobatchnorm"
     net = ResNet18().to(device)
 
     # model_name = "googlenet_trial"
@@ -54,8 +54,10 @@ def train():
 
     #criterion = nn.CrossEntropyLoss()
     learning_rate = 0.0001
-    weight_dec = 0.01
-    optimizer = optim.Adam(net.parameters(), lr=learning_rate, weight_decay=weight_dec)
+    # weight_dec = 0.001
+    optimizer = optim.Adam(net.parameters(), lr=learning_rate)
+
+   # optimizer = torch.optim.SGD(net.parameters(), lr=learning_rate, momentum=0.9, weight_decay=weight_dec)
 
     best_model_loss = float('inf')
 
@@ -71,7 +73,13 @@ def train():
 
     writer = SummaryWriter(log_dir=f"./tensor_board_outputs/id_{experiment_id}_{model_name}")
 
-    max_epochs = 15
+#     scheduler = torch.optim.lr_scheduler.StepLR(
+#     optimizer,
+#     step_size=5,    
+#     gamma=0.5       
+# )
+
+    max_epochs = 25
     best_epoch = 0
     print("TRAINING START")
     for epoch in range(max_epochs):  # loop over the dataset multiple times, this should be adjusted later
@@ -117,7 +125,7 @@ def train():
             net.train()
 
         print(f"Epoch {epoch+1}, loss: {running_loss/len(train_loader):.3f}")
-
+        #scheduler.step(val_loss)
 
     print("Testing the best model")
     net.load_state_dict((torch.load(f"./models/id_{experiment_id}_{model_name}.pth", map_location=device))['net_state_dict'])
@@ -134,7 +142,7 @@ def train():
                                    batch_size= batch_size,
                                    max_epochs=max_epochs,
                                    best_epoch=best_epoch,
-                                   notes="weight decay 0.01")
+                                   notes="lr 0.0001 no batchnorm")
                                    
     print("TEST END")
 
