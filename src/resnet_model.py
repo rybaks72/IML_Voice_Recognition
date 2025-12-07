@@ -109,6 +109,9 @@ class ResNet(nn.Module):
         # Global Average Pooling (used instead of Flattening to normalize output size)
         self.avgpool = nn.AdaptiveAvgPool2d((1, 1))
 
+        #testing dropout layer
+        self.dropout = nn.Dropout(p=0.7)
+
         # Final Fully Connected Layer (Output classes set to 2)
         self.fc = nn.Linear(128 * block.expansion, num_classes)
 
@@ -135,6 +138,9 @@ class ResNet(nn.Module):
         # Flattening from (Batch, 512, 1, 1) to (Batch, 512)
         out = torch.flatten(out, 1)
 
+        #add dropout 
+        out = self.dropout(out)
+
         # Final Fully Connected Layer
         out = self.fc(out)
         return out
@@ -144,4 +150,4 @@ class ResNet(nn.Module):
 def ResNet18():
     # Number of blocks in each layer for ResNet-18: [2, 2, 2, 2]
     # lets change to [1, 1, 1, 1]
-    return ResNet(BasicBlock, [3,3,3])
+    return ResNet(BasicBlock, [2,2,2])
