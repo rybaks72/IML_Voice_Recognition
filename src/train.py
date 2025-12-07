@@ -43,7 +43,7 @@ def train():
     #model_name = "first_trial"
     #net = SimpleCNN().to(device)
 
-    model_name = "resnet_trial_111_64_drop_0.5_adam_lr_0.0001_nobatchnorm"
+    model_name = "resnet_trial_111_64_drop_0.5_adam_lr_0.0001_batchnorm_after_relu"
     net = ResNet18().to(device)
 
     # model_name = "googlenet_trial"
@@ -79,7 +79,7 @@ def train():
 #     gamma=0.5       
 # )
 
-    max_epochs = 25
+    max_epochs = 10
     best_epoch = 0
     print("TRAINING START")
     for epoch in range(max_epochs):  # loop over the dataset multiple times, this should be adjusted later
@@ -142,7 +142,7 @@ def train():
                                    batch_size= batch_size,
                                    max_epochs=max_epochs,
                                    best_epoch=best_epoch,
-                                   notes="lr 0.0001 no batchnorm")
+                                   notes="batchnorm after instead of before relu")
                                    
     print("TEST END")
 
