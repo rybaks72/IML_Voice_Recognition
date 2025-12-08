@@ -4,12 +4,17 @@ import torch.optim as optim
 from torch.utils.data import TensorDataset, DataLoader
 import numpy as np
 from sklearn.metrics import f1_score, confusion_matrix, accuracy_score, precision_score, recall_score
+
+#from src.mobilenet_model import MobileNetV2
 from src.model import SimpleCNN
 from torch.utils.tensorboard import SummaryWriter
 import csv
 import os
 from datetime import datetime
 from preprocessing_pipeline.util import random_data_split
+from src.resnet_model import ResNet18
+# from src.googlenet_model import GoogleNet
+# from src.mobilenet_model import MobileNetV2
 from src.train_util import time_mask, time_shift, freq_mask, get_threshold_roc
 
 
@@ -36,11 +41,25 @@ def train():
     test_loader = DataLoader(TensorDataset(x_test, y_test), batch_size=8, shuffle=False)
     weights = torch.tensor([1.0, data['weight']]).to(device)
     criterion = nn.CrossEntropyLoss(weight=weights)
-    model_name = "first_trial"
-    net = SimpleCNN().to(device)
+
+    #model_name = "first_trial"
+    #net = SimpleCNN().to(device)
+
+    model_name = "resnet_trial_111_64_drop_0.5_adam_lr_0.0001_batchnorm_after_relu"
+    net = ResNet18().to(device)
+
+    # model_name = "googlenet_trial"
+    # net = GoogleNet().to(device)
+
+    # model_name = "mobilenet_trial"
+    # net = MobileNetV2().to(device)
+
     #criterion = nn.CrossEntropyLoss()
     learning_rate = 0.0001
+    # weight_dec = 0.001
     optimizer = optim.Adam(net.parameters(), lr=learning_rate)
+
+   # optimizer = torch.optim.SGD(net.parameters(), lr=learning_rate, momentum=0.9, weight_decay=weight_dec)
 
     best_model_loss = float('inf')
 
@@ -56,7 +75,13 @@ def train():
 
     writer = SummaryWriter(log_dir=f"./tensor_board_outputs/id_{experiment_id}_{model_name}")
 
-    max_epochs = 15
+#     scheduler = torch.optim.lr_scheduler.StepLR(
+#     optimizer,
+#     step_size=5,
+#     gamma=0.5
+# )
+
+    max_epochs = 10
     best_epoch = 0
     print("TRAINING START")
     for epoch in range(max_epochs):  # loop over the dataset multiple times, this should be adjusted later
@@ -103,7 +128,7 @@ def train():
             net.train()
 
         print(f"Epoch {epoch+1}, loss: {running_loss/len(train_loader):.3f}")
-
+        #scheduler.step(val_loss)
 
     print("Testing the best model")
     net.load_state_dict((torch.load(f"./models/id_{experiment_id}_{model_name}.pth", map_location=device))['net_state_dict'])
@@ -119,8 +144,9 @@ def train():
                                    lr = learning_rate,
                                    batch_size= batch_size,
                                    max_epochs=max_epochs,
-                                   best_epoch=best_epoch
-                                   )
+                                   best_epoch=best_epoch,
+                                   notes="batchnorm after instead of before relu")
+
     print("TEST END")
 
     writer.close()

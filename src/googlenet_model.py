@@ -1,6 +1,6 @@
 import torch
 import torch.nn as nn
-from torchvision.models import googlenet, Googlenet_Weights
+from torchvision.models import GoogLeNet_Weights, googlenet
 
 
 def GoogleNet(pretrained=False):
@@ -17,7 +17,7 @@ def GoogleNet(pretrained=False):
     # aux_logits=False: GoogleNet normally has 3 outputs (2 auxiliary for training).
     # We disable them to keep your training loop simple (one loss, one output).
     if pretrained:
-        weights = Googlenet_Weights.IMAGENET1K_V1
+        weights = GoogLeNet_Weights.IMAGENET1K_V1
     else:
         weights = None
 
