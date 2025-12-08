@@ -10,6 +10,7 @@ import csv
 import os
 from datetime import datetime
 from preprocessing_pipeline.util import random_data_split
+from src.train_util import time_mask, time_shift, freq_mask, get_threshold_roc
 
 
 def train():
@@ -66,6 +67,7 @@ def train():
             inputs, labels = data
             print(f"inputs shape: {inputs.shape}")
             inputs, labels = inputs.float().to(device), labels.to(device)
+            inputs = augment_batch(inputs)
 
             optimizer.zero_grad()
 
