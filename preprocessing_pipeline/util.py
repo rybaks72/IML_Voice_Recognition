@@ -18,15 +18,58 @@ def helper(path_lists, train, test, validate):
         count += len(specs["Y"])
     return count
 
+RMS = None
+
+def get_rms():
+    global RMS
+    if RMS is not None:
+        return RMS
+    files = glob("./data/*/*/*.mp3")
+    total = 0; samples = 0
+    for file in files:
+        y, sr = librosa.load(file, sr=None)
+        total += np.sum(y**2)
+        samples += len(y)
+    RMS = np.sqrt(total/samples)
+    return np.sqrt(total/samples)
+
+def add_gaussian_noise(signal, snr_db):
+    """
+    Add zero-mean Gaussian noise to `signal` to achieve target SNR (dB).
+    signal: 1D numpy array (mono), values roughly in [-1,1]
+    snr_db: desired SNR in dB (higher => cleaner)
+    """
+    sig_rms =  np.sqrt(np.mean(signal**2) + 1e-12)
+    # amplitude ratio from dB
+    ratio = 10.0 ** (snr_db / 20.0)
+    noise_rms = sig_rms / (ratio + 1e-12)
+
+    noise = np.random.randn(len(signal))
+    noise = noise * (noise_rms / (np.sqrt(np.mean(noise**2) + 1e-12) + 1e-12))
+
+    noisy = signal + noise
+    # soft peak normalization to avoid clipping
+    peak = np.max(np.abs(noisy))
+    if peak > 1.0:
+        noisy = noisy / peak
+    return noisy
+
+
+
+def rms_normalize(audio,rms):
+    clip_rms = np.sqrt(np.mean(audio**2))
+    scale = rms / clip_rms if clip_rms!=0 else rms
+    return audio * scale
+
 #INPUT: path to spectrogram data
 def random_data_split(path=".//"): #random test-train-validate datasets
     class0 = glob(f"{path}/spectogram_data/Class0/*")
     class1 = glob(f"{path}/spectogram_data/Class1/*")
     noise_noise = glob(f"{path}/spectogram_data/Random_Noise/noise/*")
     noise_people = glob(f"{path}/spectogram_data/Random_Noise/people/*")
-    print(class1)
+    #print(class1)
 
-    print(f"{path}/spectogram_data/Class1/*")
+    #print(f"{path}/spectogram_data/Class1/*")
     train = {
         'X': [],
         'Y': [],
@@ -98,9 +141,9 @@ def random_data_split(path=".//"): #random test-train-validate datasets
     }
 
 #preprocessing - normalize, trim, crop into 1 min audios, split into 3s clips
-def preprocess_data(audio, sr, clip_length):
+def preprocess_data(audio, sr, clip_length, rms=True, snr_range=(5.0, 20.0)):
     #y, sr = librosa.load(audio) #NOTE: librosa.load by default standardizes the sr to 22050 HZ
-    y_norm = librosa.util.normalize(audio)
+    y_norm = rms_normalize(audio, get_rms()) if rms else librosa.util.normalize(audio)
 
     y_trimmed, _ = librosa.effects.trim(y_norm, top_db=20)
     intervals = librosa.effects.split(y_trimmed, top_db=20)
@@ -109,7 +152,13 @@ def preprocess_data(audio, sr, clip_length):
     # max_len = sr * 60
     #
     # y_cropped = y_trimmed[:max_len]
-    y_clips = librosa.util.frame(y_no_silence, frame_length=clip_length_samples, hop_length=clip_length_samples).T
+    y_clips = librosa.util.frame(y_no_silence, frame_length=clip_length_samples, hop_length=clip_length_samples).T.copy()
+
+    for i in range(len(y_clips)):
+        if rand.random() < 0.35:
+            snr_db = float(np.random.uniform(*snr_range))
+            y_clips[i] = add_gaussian_noise(y_clips[i], snr_db)
+
     return y_clips
 
 #convert voice memo to spectograms
@@ -135,4 +184,4 @@ def convert_with_pitch_shift(audio, sr, clip_length):
     spectrogram.extend(convert_to_spectograms(upper, sr, clip_length))
 
     return spectrogram
-# print(random_data_split())
+print(random_data_split())
