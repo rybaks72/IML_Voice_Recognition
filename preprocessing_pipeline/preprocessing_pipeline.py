@@ -122,5 +122,5 @@ def create_spectrogram_from_data(clip_length):
 
     class1 = glob("./data/Class1/*/*.mp3")
     spectrogram_conversion_loop(class1, 1, clip_length)
-create_spectrogram_from_data(3)
+# create_spectrogram_from_data(3)
 #create_raw_spectrogram()

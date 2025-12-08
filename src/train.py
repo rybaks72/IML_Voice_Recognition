@@ -18,6 +18,15 @@ from src.resnet_model import ResNet18
 from src.train_util import time_mask, time_shift, freq_mask, get_threshold_roc
 
 
+def augment_batch(x):
+    if torch.rand(1) < 0.5:
+        x = time_mask(x, max_width=10)
+    if torch.rand(1) < 0.5:
+        x = freq_mask(x, max_height=5)
+    if torch.rand(1) < 0.5:
+        x = time_shift(x, max_shift=5)
+    return x
+
 def train():
     #model, inputs and labels have to be on the same device
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
