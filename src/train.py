@@ -54,7 +54,7 @@ def train():
     #model_name = "first_trial"
     #net = SimpleCNN().to(device)
 
-    model_name = "resnet_trial_111_64_drop_0.5_adam_lr_0.0001_batchnorm_after_relu"
+    model_name = "resnet_22232_0.5_0.0001_gaussian_0.35_augment_and_augment_batch_wd_0.001"
     net = ResNet18().to(device)
 
     # model_name = "googlenet_trial"
@@ -65,8 +65,8 @@ def train():
 
     #criterion = nn.CrossEntropyLoss()
     learning_rate = 0.0001
-    # weight_dec = 0.001
-    optimizer = optim.Adam(net.parameters(), lr=learning_rate)
+    weight_dec = 0.001
+    optimizer = optim.Adam(net.parameters(), lr=learning_rate, weight_decay=weight_dec)
 
    # optimizer = torch.optim.SGD(net.parameters(), lr=learning_rate, momentum=0.9, weight_decay=weight_dec)
 
@@ -90,7 +90,7 @@ def train():
 #     gamma=0.5
 # )
 
-    max_epochs = 10
+    max_epochs = 15
     best_epoch = 0
     print("TRAINING START")
     for epoch in range(max_epochs):  # loop over the dataset multiple times, this should be adjusted later
@@ -154,7 +154,7 @@ def train():
                                    batch_size= batch_size,
                                    max_epochs=max_epochs,
                                    best_epoch=best_epoch,
-                                   notes="batchnorm after instead of before relu")
+                                   notes="to previous model added weight dec 0.001")
 
     print("TEST END")
 
