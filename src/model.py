@@ -9,29 +9,29 @@ class SimpleCNN(nn.Module):
     def __init__(self):
         super().__init__()
         self.conv1 = nn.Sequential( nn.Conv2d(1, 16, 5),
-                                    nn.GroupNorm(4, 16),
-                                    #nn.BatchNorm2d(16),
+                                    #nn.GroupNorm(4, 16),
+                                    nn.BatchNorm2d(16),
                                     nn.ReLU())
                                     #nn.BatchNorm2d(16),
                                     #nn.MaxPool2d(2, 2) )
 
         self.conv2 = nn.Sequential( nn.Conv2d(16, 32, 5),
-                                    nn.GroupNorm(8, 32),
-                                    #nn.BatchNorm2d(32),
+                                    #nn.GroupNorm(8, 32),
+                                    nn.BatchNorm2d(32),
                                     nn.ReLU(),
                                     #nn.BatchNorm2d(32),
                                     nn.MaxPool2d(2, 2) )
 
         self.conv3 = nn.Sequential( nn.Conv2d(32, 64, 5),
-                                    nn.GroupNorm(8, 64),
-                                    #nn.BatchNorm2d(64),
+                                    #nn.GroupNorm(8, 64),
+                                    nn.BatchNorm2d(64),
                                     nn.ReLU(),
                                     #nn.BatchNorm2d(64),
                                     nn.MaxPool2d(2, 2))
 
         self.conv4 = nn.Sequential( nn.Conv2d(64, 128, 5),
-                                    nn.GroupNorm(16, 128),
-                                    #nn.BatchNorm2d(128),
+                                    #nn.GroupNorm(16, 128),
+                                    nn.BatchNorm2d(128),
                                     nn.ReLU(),
                                       # nn.BatchNorm2d(128),
                                     nn.MaxPool2d(2, 2) )
