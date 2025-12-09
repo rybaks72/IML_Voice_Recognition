@@ -29,7 +29,7 @@ def augment_batch(x):
         snr_db = float(torch.empty((), device=x.device).uniform_(10, 30).item())
         x = gauss_noise(x, snr_db)
     return x
-
+#hehe
 def train():
     #model, inputs and labels have to be on the same device
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
