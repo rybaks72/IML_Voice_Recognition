@@ -25,7 +25,7 @@ def augment_batch(x):
         x = freq_mask(x, max_height=5)
     if torch.rand((), device=x.device).item() < 0.5:
         x = time_shift(x, max_shift=5)
-    if torch.rand((), device=x.device).item() < 0.5:
+    if torch.rand((), device=x.device).item() < 0.2:
         snr_db = float(torch.empty((), device=x.device).uniform_(10, 30).item())
         x = gauss_noise(x, snr_db)
     return x
@@ -57,7 +57,7 @@ def train():
     #model_name = "first_trial"
     #net = SimpleCNN().to(device)
 
-    model_name = "resnet_trial_111_64_drop_0.5_adam_lr_0.0001_batchnorm_after_relu"
+    model_name = "resnet_trial_222_32_drop_0.5_sgd_lr_0.01_mom_0.9_wd_0.0001_batchnorm_after_relu_no_gauss"
     net = ResNet18().to(device)
 
     # model_name = "googlenet_trial"
@@ -68,8 +68,8 @@ def train():
 
     #criterion = nn.CrossEntropyLoss()
     learning_rate = 0.0001
-    # weight_dec = 0.001
-    optimizer = optim.Adam(net.parameters(), lr=learning_rate)
+    weight_dec = 0.01
+    optimizer = optim.AdamW(net.parameters(), lr=learning_rate)
 
    # optimizer = torch.optim.SGD(net.parameters(), lr=learning_rate, momentum=0.9, weight_decay=weight_dec)
 
@@ -93,7 +93,7 @@ def train():
 #     gamma=0.5
 # )
 
-    max_epochs = 10
+    max_epochs = 20
     best_epoch = 0
     print("TRAINING START")
     for epoch in range(max_epochs):  # loop over the dataset multiple times, this should be adjusted later
@@ -157,7 +157,7 @@ def train():
                                    batch_size= batch_size,
                                    max_epochs=max_epochs,
                                    best_epoch=best_epoch,
-                                   notes="batchnorm after instead of before relu")
+                                   notes="we still have gauss 0.2 adamw wd 0.01")
 
     print("TEST END")
 
