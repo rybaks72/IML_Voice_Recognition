@@ -60,7 +60,7 @@ def train(epoch_queue = None):
     samples_weight = torch.from_numpy(samples_weight).double()
     sampler = WeightedRandomSampler(samples_weight, num_samples=len(samples_weight), replacement=True)
 
-    train_loader = DataLoader(TensorDataset(x_train, y_train), batch_size=batch_size, shuffle=True, sampler=sampler)
+    train_loader = DataLoader(TensorDataset(x_train, y_train), batch_size=batch_size, sampler=sampler)
     val_loader = DataLoader(TensorDataset(x_valid, y_valid), batch_size=32, shuffle=False)
     test_loader = DataLoader(TensorDataset(x_test, y_test), batch_size=32, shuffle=False)
 
