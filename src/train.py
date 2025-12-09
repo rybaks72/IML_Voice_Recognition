@@ -55,7 +55,7 @@ def train():
     #model_name = "first_trial"
     #net = SimpleCNN().to(device)
 
-    model_name = "resnet_22232_0.5_0.0001_gaussian_0.35_augment_and_augment_batch_prob_0.5_wd_0.00001_sch_after_epoch_val"
+    model_name = "resnet_222_32_0.5_0.0001_gaussian_0.35_augment_and_augment_batch_prob_0.5"
     net = ResNet18().to(device)
 
     # model_name = "googlenet_trial"
@@ -66,9 +66,9 @@ def train():
 
     #criterion = nn.CrossEntropyLoss()
     learning_rate = 0.0001
-    weight_dec = 0.00001
-    optimizer = optim.Adam(net.parameters(), lr=learning_rate, weight_decay=weight_dec)
-    scheduler = ReduceLROnPlateau(optimizer, mode='min', factor=0.5, patience=2)
+    #weight_dec = 0.00005
+    optimizer = optim.Adam(net.parameters(), lr=learning_rate)
+   # scheduler = ReduceLROnPlateau(optimizer, mode='min', factor=0.5, patience=2)
    # optimizer = torch.optim.SGD(net.parameters(), lr=learning_rate, momentum=0.9, weight_decay=weight_dec)
 
     best_model_loss = float('inf')
@@ -91,7 +91,7 @@ def train():
 #     gamma=0.5
 # )
 
-    max_epochs = 30
+    max_epochs = 20
     best_epoch = 0
     print("TRAINING START")
     for epoch in range(max_epochs):  # loop over the dataset multiple times, this should be adjusted later
@@ -115,51 +115,51 @@ def train():
 
             current_batch_num = epoch * len(train_loader) + i
 
-            # val_loss = validate(net, criterion, val_loader, device)
+            val_loss = validate(net, criterion, val_loader, device)
 
-            # # one plot with both
-            # writer.add_scalars('loss', {
-            #     'train': loss.item(),
-            #     'validation': val_loss
-            # }, current_batch_num)
+            # one plot with both
+            writer.add_scalars('loss', {
+                'train': loss.item(),
+                'validation': val_loss
+            }, current_batch_num)
 
-            # #save the best model yet
-            # if val_loss < best_model_loss:
-            #     best_model_loss = val_loss
-            #     best_epoch = epoch
-            #     model_path = f"./models/id_{experiment_id}_{model_name}.pth"
-            #     torch.save({'epoch': epoch, 'batch': i, 'batch_num': current_batch_num,
-            #                 'net_state_dict': net.state_dict(),'val_loss': val_loss }, model_path)
-            #     print(f"BEST (val_loss: {val_loss:.4f}) epoch:{epoch} batch:{i} batch_num:{current_batch_num} train_loss:{loss.item():.4f}")
-            # else:
-            #     print(f"No improvement: val_loss: {val_loss:.4f} epoch:{epoch} batch:{i} batch_num:{current_batch_num} train_loss:{loss.item():.4f}")
+            #save the best model yet
+            if val_loss < best_model_loss:
+                best_model_loss = val_loss
+                best_epoch = epoch
+                model_path = f"./models/id_{experiment_id}_{model_name}.pth"
+                torch.save({'epoch': epoch, 'batch': i, 'batch_num': current_batch_num,
+                            'net_state_dict': net.state_dict(),'val_loss': val_loss }, model_path)
+                print(f"BEST (val_loss: {val_loss:.4f}) epoch:{epoch} batch:{i} batch_num:{current_batch_num} train_loss:{loss.item():.4f}")
+            else:
+                print(f"No improvement: val_loss: {val_loss:.4f} epoch:{epoch} batch:{i} batch_num:{current_batch_num} train_loss:{loss.item():.4f}")
 
-            # # return to training mode after validation
-            # net.train()
+            # return to training mode after validation
+            net.train()
 
         print(f"Epoch {epoch+1}, loss: {running_loss/len(train_loader):.3f}")
-        val_loss = validate(net, criterion, val_loader, device)
+        # val_loss = validate(net, criterion, val_loader, device)
 
-        # one plot with both
-        writer.add_scalars('loss', {
-            'train': loss.item(),
-            'validation': val_loss
-        }, epoch)
+        # # one plot with both
+        # writer.add_scalars('loss', {
+        #     'train': loss.item(),
+        #     'validation': val_loss
+        # }, epoch)
 
-        #save the best model yet
-        if val_loss < best_model_loss:
-            best_model_loss = val_loss
-            best_epoch = epoch
-            model_path = f"./models/id_{experiment_id}_{model_name}.pth"
-            torch.save({'epoch': epoch, 'batch': current_batch_num, 'batch_num': current_batch_num,
-                        'net_state_dict': net.state_dict(),'val_loss': val_loss }, model_path)
-            print(f"BEST (val_loss: {val_loss:.4f}) epoch:{epoch} batch:{i} batch_num:{current_batch_num} train_loss:{loss.item():.4f}")
-        else:
-            print(f"No improvement: val_loss: {val_loss:.4f} epoch:{epoch} batch:{i} batch_num:{current_batch_num} train_loss:{loss.item():.4f}")
+        # #save the best model yet
+        # if val_loss < best_model_loss:
+        #     best_model_loss = val_loss
+        #     best_epoch = epoch
+        #     model_path = f"./models/id_{experiment_id}_{model_name}.pth"
+        #     torch.save({'epoch': epoch, 'batch': current_batch_num, 'batch_num': current_batch_num,
+        #                 'net_state_dict': net.state_dict(),'val_loss': val_loss }, model_path)
+        #     print(f"BEST (val_loss: {val_loss:.4f}) epoch:{epoch} batch:{i} batch_num:{current_batch_num} train_loss:{loss.item():.4f}")
+        # else:
+        #     print(f"No improvement: val_loss: {val_loss:.4f} epoch:{epoch} batch:{i} batch_num:{current_batch_num} train_loss:{loss.item():.4f}")
 
-        # return to training mode after validation
-        net.train()
-        scheduler.step(val_loss)
+        # # return to training mode after validation
+        # net.train()
+        # scheduler.step(val_loss)
         
 
     print("Testing the best model")
@@ -177,7 +177,7 @@ def train():
                                    batch_size= batch_size,
                                    max_epochs=max_epochs,
                                    best_epoch=best_epoch,
-                                   notes="added scheduler ReduceLROnPlateau, to check again")
+                                   notes="back to the start with no weight decay bc most stable with highest val f1")
 
     print("TEST END")
 
