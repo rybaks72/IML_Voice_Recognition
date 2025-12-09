@@ -154,10 +154,10 @@ def preprocess_data(audio, sr, clip_length, rms=True, snr_range=(5.0, 20.0)):
     # y_cropped = y_trimmed[:max_len]
     y_clips = librosa.util.frame(y_no_silence, frame_length=clip_length_samples, hop_length=clip_length_samples).T.copy()
 
-    for i in range(len(y_clips)):
-        if rand.random() < 0.35:
-            snr_db = float(np.random.uniform(*snr_range))
-            y_clips[i] = add_gaussian_noise(y_clips[i], snr_db)
+    # for i in range(len(y_clips)):
+    #     if rand.random() < 0.35:
+    #         snr_db = float(np.random.uniform(*snr_range))_
+    #         y_clips[i] = add_gaussian_noise(y_clips[i], snr_db)
 
     return y_clips
 
