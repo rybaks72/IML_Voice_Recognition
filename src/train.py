@@ -15,10 +15,12 @@ from preprocessing_pipeline.util import random_data_split
 from src.resnet_model import ResNet18
 # from src.googlenet_model import GoogleNet
 # from src.mobilenet_model import MobileNetV2
-from src.train_util import time_mask, time_shift, freq_mask, get_threshold_roc, gauss_noise
+from src.train_util import time_mask, time_shift, freq_mask, get_threshold_roc, gauss_noise, vtlp
+from datetime import datetime
+from preprocessing_pipeline.util import random_data_split
 
 
-def augment_batch(x):
+def augment_batch(x, labels, sr=22050):
     if torch.rand((), device=x.device).item() < 0.5:
         x = time_mask(x, max_width=10)
     if torch.rand((), device=x.device).item() < 0.5:
@@ -28,6 +30,15 @@ def augment_batch(x):
     if torch.rand((), device=x.device).item() < 0.2:
         snr_db = float(torch.empty((), device=x.device).uniform_(10, 30).item())
         x = gauss_noise(x, snr_db)
+
+    # if torch.rand((), device=x.device).item() < 0.5:
+    #     labels_flat = labels.view(-1)
+    #     mask0 = (labels_flat == 0)
+
+    #     if mask0.any():
+    #         x_out = x.clone()
+    #         x_out[mask0] = vtlp(x_out[mask0], sr=sr)
+    #         return x_out
     return x
 #hehe
 def train():
@@ -57,7 +68,7 @@ def train():
     #model_name = "first_trial"
     #net = SimpleCNN().to(device)
 
-    model_name = "resnet_trial_222_32_drop_0.5_adamw_lr_0.0001_wd_0.005_batchnorm_after_relu_no_gauss"
+    model_name = "resnet_trial_222_32_drop_0.5_sgd_lr_0.01_mom09_wd_0.0001_new_augment"
     net = ResNet18().to(device)
 
     # model_name = "googlenet_trial"
@@ -67,11 +78,11 @@ def train():
     # net = MobileNetV2().to(device)
 
    
-    learning_rate = 0.0001
-    weight_dec = 0.005
-    optimizer = optim.AdamW(net.parameters(), lr=learning_rate, weight_decay=weight_dec)
-    #learning_rate = 0.1
-    #optimizer = torch.optim.SGD(net.parameters(), lr=learning_rate, momentum=0.9, weight_decay=0.0001)
+    #learning_rate = 0.0001
+    #weight_dec = 0.005
+    #optimizer = optim.AdamW(net.parameters(), lr=learning_rate, weight_decay=weight_dec)
+    learning_rate = 0.01
+    optimizer = torch.optim.SGD(net.parameters(), lr=learning_rate, momentum=0.9, weight_decay=0.0001)
 
    # optimizer = torch.optim.SGD(net.parameters(), lr=learning_rate, momentum=0.9, weight_decay=weight_dec)
 
@@ -106,7 +117,7 @@ def train():
             inputs, labels = data
             print(f"inputs shape: {inputs.shape}")
             inputs, labels = inputs.float().to(device), labels.to(device)
-            inputs = augment_batch(inputs)
+            inputs = augment_batch(inputs, labels)
 
             optimizer.zero_grad()
 
