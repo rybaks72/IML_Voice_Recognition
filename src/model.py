@@ -38,7 +38,7 @@ class SimpleCNN(nn.Module):
 
         # input: 1 channel spectrogram (grayscale)
         self.pool = nn.MaxPool2d(1, 1)
-        self.global_pool = nn.AdaptiveAvgPool2d((1, 2))
+        self.global_pool = nn.AdaptiveAvgPool2d((1, 1))
 
         # with torch.no_grad():
         #     dummy = torch.zeros(1, 1, 128, 130)
@@ -48,7 +48,7 @@ class SimpleCNN(nn.Module):
         #     out = self.conv4(out)
         #     flat_dim = out.numel()
 
-        self.fc1 = nn.Linear(128 * 2 , 128)
+        self.fc1 = nn.Linear(128 , 128)
 
         self.dropout1 = nn.Dropout(p=0.3)
 
