@@ -64,85 +64,93 @@ def rms_normalize(audio,rms):
     return audio * scale
 
 #INPUT: path to spectrogram data
-def random_data_split(path="./"): #random test-train-validate datasets
-    class0 = glob(f"{path}/spectogram_data/Class0/*")
-    class1 = glob(f"{path}/spectogram_data/Class1/*")
-    noise_noise = glob(f"{path}/spectogram_data/Random_Noise/noise/*")
-    noise_people = glob(f"{path}/spectogram_data/Random_Noise/people/*")
-    #print(class1)
-    print(class0)
-    #print(f"{path}/spectogram_data/Class1/*")
-    train = {
-        'X': [],
-        'Y': [],
-        'length': 14
-    }
-    test = {
-        'X': [],
-        'Y': [],
-        'length': 4
-    }
-    validate = {
-        'X': [],
-        'Y': [],
-        'length': 2
-    }
-    sets = [test, train, validate]
-    #print(len(class0))
 
-    class1_count = 0
+def random_data_split(path=None):  # random test-train-validate datasets
+    import os, glob
+    # If path is None or a relative './', resolve spectogram_data relative to this module file
+    module_dir = os.path.dirname(__file__)
+    if path is None or path == "./" or path == ".":
+        base = module_dir
+    else:
+        base = os.path.abspath(path)
+    spec_base = os.path.join(base, "spectogram_data")
+
+    # debug prints to make failures obvious
+    class0 = glob.glob(os.path.join(spec_base, "Class0", "*"))
+    class1 = glob.glob(os.path.join(spec_base, "Class1", "*"))
+    noise_noise = glob.glob(os.path.join(spec_base, "Random_Noise", "noise", "*"))
+    noise_people = glob.glob(os.path.join(spec_base, "Random_Noise", "people", "*"))
+
+    print("DEBUG found class0 dirs:", class0)
+    print("DEBUG found class1 dirs:", class1)
+    print("DEBUG noise_people count:", len(noise_people), "noise_noise count:", len(noise_noise))
+
+    train = {'X': [], 'Y': [], 'length': 14}
+    test = {'X': [], 'Y': [], 'length': 4}
+    validate = {'X': [], 'Y': [], 'length': 2}
+
+    def helper(path_lists, train, test, validate):
+        sets = [test, train, validate]
+        count = 0
+        import random as rand
+        for path_item in path_lists:
+            available_sets = [s for s in sets if s['length'] != 0]
+            if not available_sets:
+                continue
+            dataset = rand.choice(available_sets)
+            dataset['length'] -= 1
+            specs = __import__('numpy').load(path_item, allow_pickle=True)
+            dataset['X'].extend(specs['X'])
+            dataset['Y'].extend(specs['Y'])
+            count += len(specs["Y"])
+            print("loaded:", path_item)
+        print("DONE helper")
+        return count
+
     class0_count = 0
+    class1_count = 0
 
+    # iterate people in class0
     for person in class0:
-        person_path = glob(f'{person}/*.npz')
-        #NOWE
+        person_path = glob.glob(os.path.join(person, "*.npz"))
         train['length'] = 2
         test['length'] = 1
         validate['length'] = 1
         class0_count += helper(person_path, train, test, validate)
-        ##STARE
-        # available_sets = [s for s in sets if s['length'] != 0]
-        # dataset = rand.choice(available_sets)
-        # dataset['length']-=1
-        # for path in person_path:
-        #     specs = np.load(path, allow_pickle=True)
-        #     dataset['X'].extend(specs['X'])
-        #     dataset['Y'].extend(specs['Y'])
 
     for person in class1:
-         person_path = glob(f'{person}/*.npz')
-         train['length'] = 10
-         test['length'] = 3
-         validate['length'] = 2
-         class1_count += helper(person_path, train, test, validate)
+        person_path = glob.glob(os.path.join(person, "*.npz"))
+        train['length'] = 10
+        test['length'] = 3
+        validate['length'] = 2
+        class1_count += helper(person_path, train, test, validate)
 
-    #noise_people
-    train['length'] =  int(len(noise_people)*0.7)
-    test['length'] = int(len(noise_people)*0.3)
-    validate['length'] = len(noise_people) - train['length'] - test['length']
-    class0_count += helper(noise_people,train,test,validate)
+    # noise_people
+    train['length'] = int(len(noise_people) * 0.7)
+    test['length'] = int(len(noise_people) * 0.3)
+    validate['length'] = max(0, len(noise_people) - train['length'] - test['length'])
+    class0_count += helper(noise_people, train, test, validate)
 
-    #noise_noise
+    # noise_noise
     train['length'] = 3
     test['length'] = 2
     validate['length'] = 1
     class0_count += helper(noise_noise, train, test, validate)
 
-    print(len(train['X']),len(train['Y']))
-    print(len(test['X']),len(test['Y']))
-    print(len(validate['X']),len(validate['Y']))
-    print(len(train['X']) + len(test['X']) +len(validate['X']))
-    # print(train)
-    # print(test)
-    # print(validate)
+    if class1_count == 0:
+        raise RuntimeError(f"class1_count == 0 (no data found for Class1). "
+                           f"Please check spectogram_data under: {spec_base} "
+                           f"Class0_count={class0_count}, Class1_count={class1_count}")
+
+    import torch, numpy as np
+    weight = class0_count / class1_count
     return {
         'train': (torch.tensor(np.array(train['X'])).unsqueeze(1), torch.tensor(np.array(train['Y']))),
         'test': (torch.tensor(np.array(test['X'])).unsqueeze(1), torch.tensor(np.array(test['Y']))),
         'validate': (torch.tensor(np.array(validate['X'])).unsqueeze(1), torch.tensor(np.array(validate['Y']))),
-        "weight": class0_count / class1_count,
+        "weight": weight,
     }
 
-#preprocessing - normalize, trim, crop into 1 min audios, split into 3s clips
 def preprocess_data(audio, sr, clip_length, rms=True, snr_range=(5.0, 20.0)):
     #y, sr = librosa.load(audio) #NOTE: librosa.load by default standardizes the sr to 22050 HZ
     y_norm = rms_normalize(audio, get_rms()) if rms else librosa.util.normalize(audio)
@@ -184,4 +192,4 @@ def convert_with_pitch_shift(audio, sr, clip_length):
 
     spectrogram = [convert_to_spectograms(lower, sr, clip_length), convert_to_spectograms(upper, sr, clip_length)]
     return spectrogram
-#print(random_data_split())
+print(random_data_split())
