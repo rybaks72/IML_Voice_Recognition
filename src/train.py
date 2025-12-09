@@ -15,17 +15,19 @@ from preprocessing_pipeline.util import random_data_split
 from src.resnet_model import ResNet18
 # from src.googlenet_model import GoogleNet
 # from src.mobilenet_model import MobileNetV2
-from src.train_util import time_mask, time_shift, freq_mask, get_threshold_roc
-from torch.optim.lr_scheduler import ReduceLROnPlateau
+from src.train_util import time_mask, time_shift, freq_mask, get_threshold_roc, gauss_noise
 
 
 def augment_batch(x):
-    if torch.rand(1) < 0.5:
+    if torch.rand((), device=x.device).item() < 0.5:
         x = time_mask(x, max_width=10)
-    if torch.rand(1) < 0.5:
+    if torch.rand((), device=x.device).item() < 0.5:
         x = freq_mask(x, max_height=5)
-    if torch.rand(1) < 0.5:
+    if torch.rand((), device=x.device).item() < 0.5:
         x = time_shift(x, max_shift=5)
+    if torch.rand((), device=x.device).item() < 0.5:
+        snr_db = float(torch.empty((), device=x.device).uniform_(10, 30).item())
+        x = gauss_noise(x, snr_db)
     return x
 
 def train():
@@ -55,7 +57,7 @@ def train():
     #model_name = "first_trial"
     #net = SimpleCNN().to(device)
 
-    model_name = "resnet_222_32_0.5_0.0001_gaussian_0.35_augment_and_augment_batch_prob_0.5"
+    model_name = "resnet_trial_111_64_drop_0.5_adam_lr_0.0001_batchnorm_after_relu"
     net = ResNet18().to(device)
 
     # model_name = "googlenet_trial"
@@ -66,9 +68,9 @@ def train():
 
     #criterion = nn.CrossEntropyLoss()
     learning_rate = 0.0001
-    #weight_dec = 0.00005
+    # weight_dec = 0.001
     optimizer = optim.Adam(net.parameters(), lr=learning_rate)
-   # scheduler = ReduceLROnPlateau(optimizer, mode='min', factor=0.5, patience=2)
+
    # optimizer = torch.optim.SGD(net.parameters(), lr=learning_rate, momentum=0.9, weight_decay=weight_dec)
 
     best_model_loss = float('inf')
@@ -91,7 +93,7 @@ def train():
 #     gamma=0.5
 # )
 
-    max_epochs = 20
+    max_epochs = 10
     best_epoch = 0
     print("TRAINING START")
     for epoch in range(max_epochs):  # loop over the dataset multiple times, this should be adjusted later
@@ -138,29 +140,7 @@ def train():
             net.train()
 
         print(f"Epoch {epoch+1}, loss: {running_loss/len(train_loader):.3f}")
-        # val_loss = validate(net, criterion, val_loader, device)
-
-        # # one plot with both
-        # writer.add_scalars('loss', {
-        #     'train': loss.item(),
-        #     'validation': val_loss
-        # }, epoch)
-
-        # #save the best model yet
-        # if val_loss < best_model_loss:
-        #     best_model_loss = val_loss
-        #     best_epoch = epoch
-        #     model_path = f"./models/id_{experiment_id}_{model_name}.pth"
-        #     torch.save({'epoch': epoch, 'batch': current_batch_num, 'batch_num': current_batch_num,
-        #                 'net_state_dict': net.state_dict(),'val_loss': val_loss }, model_path)
-        #     print(f"BEST (val_loss: {val_loss:.4f}) epoch:{epoch} batch:{i} batch_num:{current_batch_num} train_loss:{loss.item():.4f}")
-        # else:
-        #     print(f"No improvement: val_loss: {val_loss:.4f} epoch:{epoch} batch:{i} batch_num:{current_batch_num} train_loss:{loss.item():.4f}")
-
-        # # return to training mode after validation
-        # net.train()
-        # scheduler.step(val_loss)
-        
+        #scheduler.step(val_loss)
 
     print("Testing the best model")
     net.load_state_dict((torch.load(f"./models/id_{experiment_id}_{model_name}.pth", map_location=device))['net_state_dict'])
@@ -177,7 +157,7 @@ def train():
                                    batch_size= batch_size,
                                    max_epochs=max_epochs,
                                    best_epoch=best_epoch,
-                                   notes="back to the start with no weight decay bc most stable with highest val f1")
+                                   notes="batchnorm after instead of before relu")
 
     print("TEST END")
 

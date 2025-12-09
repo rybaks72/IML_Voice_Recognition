@@ -184,4 +184,4 @@ def convert_with_pitch_shift(audio, sr, clip_length):
     spectrogram.extend(convert_to_spectograms(upper, sr, clip_length))
 
     return spectrogram
-# print(random_data_split())
+print(random_data_split())

@@ -32,6 +32,15 @@ def time_mask(x, max_width=10):
         x[i, :, :, start:start+w] = 0.0
     return x
 
+def gauss_noise(x, snr_db):
+    signal_pow = x.float().pow(2).mean().clamp(min=1e-12)
+    snr_linear = 10 ** (snr_db / 10)
+
+    noise_pow = signal_pow / snr_linear
+    sigma = torch.sqrt(noise_pow)
+    noise = torch.randn_like(x) * sigma
+    return torch.clamp(x + noise, min=0.0)
+
 def get_threshold_roc(net, dataloader, device):
     net.eval()
     all_probabilities, all_labels = [], []
