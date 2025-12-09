@@ -14,17 +14,17 @@ from preprocessing_pipeline.util import random_data_split
 
 
 def augment_batch(x, labels, sr=22050):
-    if torch.rand((), device=x.device).item() < 0.5:
+    if torch.rand((), device=x.device).item() < 0.3:
         x = time_mask(x, max_width=10)
-    if torch.rand((), device=x.device).item() < 0.5:
+    if torch.rand((), device=x.device).item() < 0.3:
         x = freq_mask(x, max_height=5)
-    if torch.rand((), device=x.device).item() < 0.5:
+    if torch.rand((), device=x.device).item() < 0.3:
         x = time_shift(x, max_shift=5)
     if torch.rand((), device=x.device).item() < 0.3:
         snr_db = float(torch.empty((), device=x.device).uniform_(10, 30).item())
         x = gauss_noise(x, snr_db)
 
-    if torch.rand((), device=x.device).item() < 0.5:
+    if torch.rand((), device=x.device).item() < 0.3:
         labels_flat = labels.view(-1)
         mask0 = (labels_flat == 0)
 
@@ -53,8 +53,8 @@ def train(epoch_queue = None):
     x_test = x_test.float()
     batch_size =32
     train_loader = DataLoader(TensorDataset(x_train, y_train), batch_size=batch_size, shuffle=True)
-    val_loader = DataLoader(TensorDataset(x_valid, y_valid), batch_size=8, shuffle=False)
-    test_loader = DataLoader(TensorDataset(x_test, y_test), batch_size=8, shuffle=False)
+    val_loader = DataLoader(TensorDataset(x_valid, y_valid), batch_size=32, shuffle=False)
+    test_loader = DataLoader(TensorDataset(x_test, y_test), batch_size=32, shuffle=False)
 
     weights = torch.tensor([1.0, data['weight']]).to(device)
     #criterion = nn.CrossEntropyLoss(weight=weights)
@@ -350,6 +350,7 @@ def save_to_csv_experiment_results(
         "batch_size",
         "max_epochs",
         "best epoch",
+        "auc",
         "notes"
     ]
 
