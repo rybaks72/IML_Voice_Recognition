@@ -15,16 +15,19 @@ from preprocessing_pipeline.util import random_data_split
 from src.resnet_model import ResNet18
 # from src.googlenet_model import GoogleNet
 # from src.mobilenet_model import MobileNetV2
-from src.train_util import time_mask, time_shift, freq_mask, get_threshold_roc
+from src.train_util import time_mask, time_shift, freq_mask, get_threshold_roc, gauss_noise
 
 
 def augment_batch(x):
-    if torch.rand(1) < 0.5:
+    if torch.rand((), device=x.device).item() < 0.5:
         x = time_mask(x, max_width=10)
-    if torch.rand(1) < 0.5:
+    if torch.rand((), device=x.device).item() < 0.5:
         x = freq_mask(x, max_height=5)
-    if torch.rand(1) < 0.5:
+    if torch.rand((), device=x.device).item() < 0.5:
         x = time_shift(x, max_shift=5)
+    if torch.rand((), device=x.device).item() < 0.5:
+        snr_db = float(torch.empty((), device=x.device).uniform_(10, 30).item())
+        x = gauss_noise(x, snr_db)
     return x
 
 def train():
