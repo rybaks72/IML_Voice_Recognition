@@ -68,7 +68,7 @@ def train():
     #model_name = "first_trial"
     #net = SimpleCNN().to(device)
 
-    model_name = "resnet_trial_222_32_drop_0.5_sgd_lr_0.01_mom09_wd_0.0001_new_augment"
+    model_name = "resnet_trial_222_32_drop_0.5_sgd_lr_0.01_mom09_wd_0.0001_sch_step_lr"
     net = ResNet18().to(device)
 
     # model_name = "googlenet_trial"
@@ -83,6 +83,12 @@ def train():
     #optimizer = optim.AdamW(net.parameters(), lr=learning_rate, weight_decay=weight_dec)
     learning_rate = 0.01
     optimizer = torch.optim.SGD(net.parameters(), lr=learning_rate, momentum=0.9, weight_decay=0.0001)
+
+#     scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(
+#     optimizer, 
+#     T_max=10,     #i think too aggressive
+#     eta_min=0.001 
+# )
 
    # optimizer = torch.optim.SGD(net.parameters(), lr=learning_rate, momentum=0.9, weight_decay=weight_dec)
 
@@ -100,13 +106,13 @@ def train():
 
     writer = SummaryWriter(log_dir=f"./tensor_board_outputs/id_{experiment_id}_{model_name}")
 
-#     scheduler = torch.optim.lr_scheduler.StepLR(
-#     optimizer,
-#     step_size=5,
-#     gamma=0.5
-# )
+    scheduler = torch.optim.lr_scheduler.StepLR(
+    optimizer,
+    step_size=3, # since my best epochs are often under 10 lets try this
+    gamma=0.7
+)
 
-    max_epochs = 20
+    max_epochs = 25
     best_epoch = 0
     print("TRAINING START")
     for epoch in range(max_epochs):  # loop over the dataset multiple times, this should be adjusted later
@@ -154,6 +160,7 @@ def train():
 
         print(f"Epoch {epoch+1}, loss: {running_loss/len(train_loader):.3f}")
         #scheduler.step(val_loss)
+        scheduler.step()
 
     print("Testing the best model")
     net.load_state_dict((torch.load(f"./models/id_{experiment_id}_{model_name}.pth", map_location=device))['net_state_dict'])
@@ -170,7 +177,7 @@ def train():
                                    batch_size= batch_size,
                                    max_epochs=max_epochs,
                                    best_epoch=best_epoch,
-                                   notes="back to adamw with weight decay 0.005")
+                                   notes="trying steplr with step 3 and gamma 0.7")
 
     print("TEST END")
 
