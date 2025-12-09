@@ -11,7 +11,7 @@ import os
 from src.train_util import time_mask, time_shift, freq_mask, get_threshold_roc, gauss_noise, vtlp
 from datetime import datetime
 from preprocessing_pipeline.util import random_data_split
-
+from torch.utils.data import WeightedRandomSampler
 
 def augment_batch(x, labels, sr=22050):
     if torch.rand((), device=x.device).item() < 0.3:
@@ -358,8 +358,8 @@ def save_to_csv_experiment_results(
         "batch_size",
         "max_epochs",
         "best epoch",
+        "notes",
         "auc",
-        "notes"
     ]
 
     row = [
@@ -406,8 +406,8 @@ def save_to_csv_experiment_results(
         batch_size,
         max_epochs,
         best_epoch,
-        auc,
-        notes if notes is not None else ""
+        notes if notes is not None else "",
+        auc
     ]
 
     file_exists = os.path.isfile(filename)
