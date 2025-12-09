@@ -1,5 +1,6 @@
 import torch, numpy as np
 from sklearn.metrics import roc_curve, roc_auc_score
+import torch.nn.functional as F
 
 def time_shift(x, max_shift=5):
     # x: (B, 1, H, W)
@@ -32,6 +33,15 @@ def time_mask(x, max_width=10):
         x[i, :, :, start:start+w] = 0.0
     return x
 
+def gauss_noise(x, snr_db):
+    signal_pow = x.float().pow(2).mean().clamp(min=1e-12)
+    snr_linear = 10 ** (snr_db / 10)
+
+    noise_pow = signal_pow / snr_linear
+    sigma = torch.sqrt(noise_pow)
+    noise = torch.randn_like(x) * sigma
+    return torch.clamp(x + noise, min=0.0)
+
 def get_threshold_roc(net, dataloader, device):
     net.eval()
     all_probabilities, all_labels = [], []
@@ -59,4 +69,32 @@ def get_threshold_roc(net, dataloader, device):
 
     print(f"AUC={auc:.4f} | Best threshold={threshold:.4f} | TPR={tpr[best_idx]:.3f} | FPR={fpr[best_idx]:.3f}")
 
-    return threshold
+    return threshold, auc
+
+
+def vtlp(spec, sr=22050, alpha_min=0.8, alpha_max=1.2):
+    B, C, M, T = spec.shape
+    device = spec.device
+
+    alpha = torch.empty(B, 1, 1, 1, device=device).uniform_(alpha_min, alpha_max)
+
+    # original mel bin positions
+    orig_bins = torch.linspace(0, 1, steps=M, device=device).view(1, 1, M, 1)
+
+    # warp curve
+    f0 = 4800 / (sr/2)  # normalized cutoff
+    warped = torch.where(
+        orig_bins < f0,
+        orig_bins * alpha,
+        f0 + (orig_bins - f0) * ((1 - alpha) / (1 - f0))
+    )
+
+    warped = warped.clamp(0, 1)
+
+    # grid for interpolation
+    grid = torch.zeros(B, M, T, 2, device=device)
+    grid[..., 0] = warped.squeeze(1) * 2 - 1  # x-axis (freq)
+    grid[..., 1] = torch.linspace(-1, 1, steps=T, device=device).view(1, 1, T).expand(B, M, T)
+
+    out = F.grid_sample(spec, grid, mode='bilinear', align_corners=True)
+    return out

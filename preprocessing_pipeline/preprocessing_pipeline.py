@@ -127,11 +127,11 @@ def create_spectrogram_from_data(clip_length):
     create_directories(".\\spectogram_data")
 
     class0 = glob(".\\data\\Class0\\*\\*.mp3")
-    #spectrogram_conversion_loop(class0, 0, clip_length)
+    spectrogram_conversion_loop(class0, 0, clip_length)
     print("class0 done")
 
     augmented_class0 = glob(".\\data\\Class0\\*\\*.mp3")[0::4]
-    spectrogram_conversion_loop(augmented_class0, 0, clip_length, pitch=True)
+    #spectrogram_conversion_loop(augmented_class0, 0, clip_length, pitch=True)
     print("augmented class0 done")
 
     noise = glob(".\\data\\Random_Noise\\*\\*.mp3")
@@ -139,7 +139,7 @@ def create_spectrogram_from_data(clip_length):
     print("noise done")
 
     noise_ppl_aug = glob(".\\data\\Random_Noise\\people\\*.mp3")
-    spectrogram_conversion_loop(noise_ppl_aug, 0, clip_length, pitch=True)
+    #spectrogram_conversion_loop(noise_ppl_aug, 0, clip_length, pitch=True)
     print("augmented noise done")
 
     class1 = glob(".\\data\\Class1\\*\\*.mp3")
@@ -147,7 +147,7 @@ def create_spectrogram_from_data(clip_length):
     print("class1 done")
 
     class1_aug = glob(".\\data\\Class1\\*\\*.mp3")[0::15]
-    spectrogram_conversion_loop(class1_aug, 0, clip_length, pitch=True)
+    #spectrogram_conversion_loop(class1_aug, 0, clip_length, pitch=True)
     print("class1 done")
 
 

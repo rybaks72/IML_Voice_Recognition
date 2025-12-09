@@ -16,8 +16,8 @@ def helper(path_lists, train, test, validate):
         dataset['X'].extend(specs['X'])
         dataset['Y'].extend(specs['Y'])
         count += len(specs["Y"])
-        print(path)
-    print("DONE")
+        # print(path)
+    # print("DONE")
     return count
 
 RMS = None
@@ -70,7 +70,7 @@ def random_data_split(path="./"): #random test-train-validate datasets
     noise_noise = glob(f"{path}/spectogram_data/Random_Noise/noise/*")
     noise_people = glob(f"{path}/spectogram_data/Random_Noise/people/*")
     #print(class1)
-    print(class0)
+    # print(class0)
     #print(f"{path}/spectogram_data/Class1/*")
     train = {
         'X': [],
@@ -156,10 +156,10 @@ def preprocess_data(audio, sr, clip_length, rms=True, snr_range=(5.0, 20.0)):
     # y_cropped = y_trimmed[:max_len]
     y_clips = librosa.util.frame(y_no_silence, frame_length=clip_length_samples, hop_length=clip_length_samples).T.copy()
 
-    for i in range(len(y_clips)):
-        if rand.random() < 0.35:
-            snr_db = float(np.random.uniform(*snr_range))
-            y_clips[i] = add_gaussian_noise(y_clips[i], snr_db)
+    # for i in range(len(y_clips)):
+    #     if rand.random() < 0.35:
+    #         snr_db = float(np.random.uniform(*snr_range))
+    #         y_clips[i] = add_gaussian_noise(y_clips[i], snr_db)
 
     return y_clips
 
@@ -184,4 +184,4 @@ def convert_with_pitch_shift(audio, sr, clip_length):
 
     spectrogram = [convert_to_spectograms(lower, sr, clip_length), convert_to_spectograms(upper, sr, clip_length)]
     return spectrogram
-#print(random_data_split())
+print(random_data_split())

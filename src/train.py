@@ -8,17 +8,30 @@ from src.model import SimpleCNN
 from torch.utils.tensorboard import SummaryWriter
 import csv
 import os
-from src.train_util import time_mask, time_shift, freq_mask, get_threshold_roc
+from src.train_util import time_mask, time_shift, freq_mask, get_threshold_roc, gauss_noise, vtlp
 from datetime import datetime
 from preprocessing_pipeline.util import random_data_split
 
-def augment_batch(x):
-    if torch.rand(1) < 0.5:
+
+def augment_batch(x, labels, sr=22050):
+    if torch.rand((), device=x.device).item() < 0.5:
         x = time_mask(x, max_width=10)
-    if torch.rand(1) < 0.5:
+    if torch.rand((), device=x.device).item() < 0.5:
         x = freq_mask(x, max_height=5)
-    if torch.rand(1) < 0.5:
+    if torch.rand((), device=x.device).item() < 0.5:
         x = time_shift(x, max_shift=5)
+    if torch.rand((), device=x.device).item() < 0.3:
+        snr_db = float(torch.empty((), device=x.device).uniform_(10, 30).item())
+        x = gauss_noise(x, snr_db)
+
+    if torch.rand((), device=x.device).item() < 0.5:
+        labels_flat = labels.view(-1)
+        mask0 = (labels_flat == 0)
+
+        if mask0.any():
+            x_out = x.clone()
+            x_out[mask0] = vtlp(x_out[mask0], sr=sr)
+            return x_out
     return x
 
 def train(epoch_queue = None):
@@ -94,7 +107,7 @@ def train(epoch_queue = None):
 
             #print(f"inputs shape: {inputs.shape}")
             inputs, labels = inputs.float().to(device), labels.to(device)
-            inputs = augment_batch(inputs)
+            inputs = augment_batch(inputs, labels)
             labels = labels.float().unsqueeze(1)
             optimizer.zero_grad()
 
@@ -147,7 +160,7 @@ def train(epoch_queue = None):
         epoch_queue.put({"msg": "DONE"})
 
     net.load_state_dict((torch.load(f"./models-single-val/id_{experiment_id}_{model_name}.pth", map_location=device))['net_state_dict'])
-    threshold = get_threshold_roc(net, val_loader, device)
+    threshold, auc = get_threshold_roc(net, val_loader, device)
     print("Testing the best model...")
     test_metrics = calculate_metrics(net, test_loader, device, threshold)
     val_metrics = calculate_metrics(net, val_loader, device, threshold)
@@ -162,7 +175,8 @@ def train(epoch_queue = None):
                                    lr = learning_rate,
                                    batch_size= batch_size,
                                    max_epochs=max_epochs,
-                                   best_epoch=best_epoch
+                                   best_epoch=best_epoch,
+                                   auc = auc
                                    )
     print("TEST END")
 
@@ -287,6 +301,7 @@ def save_to_csv_experiment_results(
     batch_size,
     max_epochs,
     best_epoch,
+    auc,
     notes=None,
 ):
 
@@ -382,6 +397,7 @@ def save_to_csv_experiment_results(
         batch_size,
         max_epochs,
         best_epoch,
+        auc,
         notes if notes is not None else ""
     ]
 
