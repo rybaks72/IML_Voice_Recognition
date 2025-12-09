@@ -64,11 +64,13 @@ import gc
 #save spectograms in .npz format
 def save_spectrogram(path,target_dir, spectrogram, label):
     path, _ = os.path.splitext(path)
-    path = path.split("/")[2:][0].split("\\")
+    path = path.split("\\")
     name = path[-1] + ".npz"
     path.remove(path[-1])
-    path.append(name)
-    path = "/".join([f"{target_dir}", *path]).lower()
+    path.append(name.lower())
+    path[-2] = path[-2].lower()
+    path = path[2:]
+    path = "\\".join([target_dir, *path])
     X = np.array(spectrogram)
     Y = np.array([label] * len(spectrogram))
     # print(f"X shape: {X.shape}")
@@ -78,49 +80,75 @@ def save_spectrogram(path,target_dir, spectrogram, label):
 
 def create_raw_spectrogram():
     dowload_data()
-    create_directories("./raw_spectrogram")
-    class0 = glob("./data/Class0/*/*.mp3")
+    create_directories(".\\raw_spectrogram")
+    class0 = glob(".\\data\\Class0\\*\\*.mp3")
     for path in class0:
         y, sr = librosa.load(path)
         S = librosa.feature.melspectrogram(y=y, sr=sr, n_mels=128, )
         spectrogram = librosa.amplitude_to_db(S, ref=np.max)
-        save_spectrogram(path, "./raw_spectrogram", spectrogram, 0)
+        save_spectrogram(path, ".\\raw_spectrogram", spectrogram, 0)
 
-    class1 = glob("./data/Class1/*/*.mp3")
+    class1 = glob(".\\data\\Class1\\*\\*.mp3")
     for path in class1:
         y, sr = librosa.load(path)
         S = librosa.feature.melspectrogram(y=y, sr=sr, n_mels=128, )
         spectrogram = librosa.amplitude_to_db(S, ref=np.max)
-        save_spectrogram(path, "./raw_spectrogram", spectrogram, 1)
+        save_spectrogram(path, ".\\raw_spectrogram", spectrogram, 1)
 
-def spectrogram_conversion_loop(path_list, label, clip_length, pitch=False):
+def pitched_path(path, prefix):
+    arr = path.split("\\")
+    arr[2] = "Random_Noise"
+    arr[3] = "people"
+    arr[4] = prefix + arr[4]
+    arr = ".\\".join(arr)
+    return arr
+
+def spectrogram_conversion_loop(path_list, label, clip_length, pitch=False, prefix=''):
     for path in path_list:
         audio, sr = librosa.load(path)
         if pitch:
-            spectrogram = convert_with_pitch_shift(audio, sr, clip_length)
+            spectrograms = convert_with_pitch_shift(audio, sr, clip_length)
+            for i in range(len(spectrograms)):
+                save_spectrogram(pitched_path(path, f"pitched{i}_"), ".\\spectogram_data", spectrograms[i], label if pitch == False else 0)
         else:
             spectrogram = convert_to_spectograms(audio, sr, clip_length)
+            save_spectrogram(path, ".\\spectogram_data", spectrogram, label if pitch==False else 0)
+            del spectrogram
 
-        save_spectrogram(path, "./spectogram_data", spectrogram, label if pitch==False else 0)
-        del audio, spectrogram
-        gc.collect()
+        del audio; gc.collect()
+
+
+
 
 #function used to process gathered data
 def create_spectrogram_from_data(clip_length):
-    dowload_data()
-    create_directories("./spectogram_data")
+    #dowload_data()
+    create_directories(".\\spectogram_data")
 
-    class0 = glob("./data/Class0/*/*.mp3")
-    spectrogram_conversion_loop(class0, 0, clip_length, pitch=True)
-    class1 = glob("./data/Class1/*/*.mp3")
+    class0 = glob(".\\data\\Class0\\*\\*.mp3")
+    #spectrogram_conversion_loop(class0, 0, clip_length)
+    print("class0 done")
 
-    augmented_class0 = glob("./data/Class0/*/*.mp3")[1::4]
+    augmented_class0 = glob(".\\data\\Class0\\*\\*.mp3")[0::4]
     spectrogram_conversion_loop(augmented_class0, 0, clip_length, pitch=True)
+    print("augmented class0 done")
 
-    noise = glob("./data/Random_Noise/*/*.mp3")
+    noise = glob(".\\data\\Random_Noise\\*\\*.mp3")
     spectrogram_conversion_loop(noise, 0, clip_length)
+    print("noise done")
 
-    class1 = glob("./data/Class1/*/*.mp3")
+    noise_ppl_aug = glob(".\\data\\Random_Noise\\people\\*.mp3")
+    spectrogram_conversion_loop(noise_ppl_aug, 0, clip_length, pitch=True)
+    print("augmented noise done")
+
+    class1 = glob(".\\data\\Class1\\*\\*.mp3")
     spectrogram_conversion_loop(class1, 1, clip_length)
+    print("class1 done")
+
+    class1_aug = glob(".\\data\\Class1\\*\\*.mp3")[0::15]
+    spectrogram_conversion_loop(class1_aug, 0, clip_length, pitch=True)
+    print("class1 done")
+
+
 create_spectrogram_from_data(3)
 #create_raw_spectrogram()
