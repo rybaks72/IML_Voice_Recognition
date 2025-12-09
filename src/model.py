@@ -20,25 +20,25 @@ class SimpleCNN(nn.Module):
                                     nn.BatchNorm2d(32),
                                     nn.ReLU(),
                                     #nn.BatchNorm2d(32),
-                                    nn.MaxPool2d(2, 2) )
+                                    nn.MaxPool2d(kernel_size=(1,2)) )
 
         self.conv3 = nn.Sequential( nn.Conv2d(32, 64, 5),
                                     #nn.GroupNorm(8, 64),
                                     nn.BatchNorm2d(64),
                                     nn.ReLU(),
                                     #nn.BatchNorm2d(64),
-                                    nn.MaxPool2d(2, 2))
+                                    nn.MaxPool2d(kernel_size=(1,2)))
 
         self.conv4 = nn.Sequential( nn.Conv2d(64, 128, 5),
                                     #nn.GroupNorm(16, 128),
                                     nn.BatchNorm2d(128),
                                     nn.ReLU(),
                                       # nn.BatchNorm2d(128),
-                                    nn.MaxPool2d(2, 2) )
+                                    nn.MaxPool2d(kernel_size=(1,2)) )
 
         # input: 1 channel spectrogram (grayscale)
-        self.pool = nn.MaxPool2d(2, 2)
-        self.global_pool = nn.AdaptiveAvgPool2d((1, 1))
+        self.pool = nn.MaxPool2d(1, 1)
+        self.global_pool = nn.AdaptiveAvgPool2d((1, 2))
 
         # with torch.no_grad():
         #     dummy = torch.zeros(1, 1, 128, 130)
@@ -48,7 +48,7 @@ class SimpleCNN(nn.Module):
         #     out = self.conv4(out)
         #     flat_dim = out.numel()
 
-        self.fc1 = nn.Linear(128 , 128)
+        self.fc1 = nn.Linear(128 * 2 , 128)
 
         self.dropout1 = nn.Dropout(p=0.3)
 
