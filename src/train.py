@@ -57,7 +57,7 @@ def train():
     #model_name = "first_trial"
     #net = SimpleCNN().to(device)
 
-    model_name = "resnet_trial_222_32_drop_0.5_sgd_lr_0.01_mom_0.9_wd_0.0001_batchnorm_after_relu_no_gauss"
+    model_name = "resnet_trial_222_32_drop_0.5_adamw_lr_0.0001_wd_0.005_batchnorm_after_relu_no_gauss"
     net = ResNet18().to(device)
 
     # model_name = "googlenet_trial"
@@ -66,10 +66,12 @@ def train():
     # model_name = "mobilenet_trial"
     # net = MobileNetV2().to(device)
 
-    #criterion = nn.CrossEntropyLoss()
+   
     learning_rate = 0.0001
-    weight_dec = 0.01
-    optimizer = optim.AdamW(net.parameters(), lr=learning_rate)
+    weight_dec = 0.005
+    optimizer = optim.AdamW(net.parameters(), lr=learning_rate, weight_decay=weight_dec)
+    #learning_rate = 0.1
+    #optimizer = torch.optim.SGD(net.parameters(), lr=learning_rate, momentum=0.9, weight_decay=0.0001)
 
    # optimizer = torch.optim.SGD(net.parameters(), lr=learning_rate, momentum=0.9, weight_decay=weight_dec)
 
@@ -157,7 +159,7 @@ def train():
                                    batch_size= batch_size,
                                    max_epochs=max_epochs,
                                    best_epoch=best_epoch,
-                                   notes="we still have gauss 0.2 adamw wd 0.01")
+                                   notes="back to adamw with weight decay 0.005")
 
     print("TEST END")
 
