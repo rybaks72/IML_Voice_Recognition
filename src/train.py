@@ -52,13 +52,21 @@ def train(epoch_queue = None):
     x_valid = x_valid.float()
     x_test = x_test.float()
     batch_size =32
-    train_loader = DataLoader(TensorDataset(x_train, y_train), batch_size=batch_size, shuffle=True)
+
+    labels_np = y_train.numpy().astype(int)  # y_train from your split
+    class_counts = np.bincount(labels_np)
+    class_weights = 1.0 / class_counts
+    samples_weight = class_weights[labels_np]
+    samples_weight = torch.from_numpy(samples_weight).double()
+    sampler = WeightedRandomSampler(samples_weight, num_samples=len(samples_weight), replacement=True)
+
+    train_loader = DataLoader(TensorDataset(x_train, y_train), batch_size=batch_size, shuffle=True, sampler=sampler)
     val_loader = DataLoader(TensorDataset(x_valid, y_valid), batch_size=32, shuffle=False)
     test_loader = DataLoader(TensorDataset(x_test, y_test), batch_size=32, shuffle=False)
 
     weights = torch.tensor([1.0, data['weight']]).to(device)
     #criterion = nn.CrossEntropyLoss(weight=weights)
-    criterion = nn.BCEWithLogitsLoss(pos_weight=torch.tensor([np.sqrt(data["weight"])]).to(device))
+    criterion = nn.BCEWithLogitsLoss() #nn.BCEWithLogitsLoss(pos_weight=torch.tensor([np.sqrt(data["weight"])]).to(device))
     model_name = "first_trial_bce"
     net = SimpleCNN().to(device)
     #criterion = nn.CrossEntropyLoss()
