@@ -61,8 +61,8 @@ def train(epoch_queue = None):
     sampler = WeightedRandomSampler(samples_weight, num_samples=len(samples_weight), replacement=True)
 
     train_loader = DataLoader(TensorDataset(x_train, y_train), batch_size=batch_size, sampler=sampler)
-    val_loader = DataLoader(TensorDataset(x_valid, y_valid), batch_size=32, shuffle=False)
-    test_loader = DataLoader(TensorDataset(x_test, y_test), batch_size=32, shuffle=False)
+    val_loader = DataLoader(TensorDataset(x_valid, y_valid), batch_size=64, shuffle=False)
+    test_loader = DataLoader(TensorDataset(x_test, y_test), batch_size=64, shuffle=False)
 
     weights = torch.tensor([1.0, data['weight']]).to(device)
     #criterion = nn.CrossEntropyLoss(weight=weights)
@@ -73,7 +73,7 @@ def train(epoch_queue = None):
     #learning_rate = 0.0001
     #optimizer = optim.Adam(net.parameters(), lr=learning_rate)
 
-    learning_rate = 0.0001
+    learning_rate = 0.0003
     weight_decay = 5e-5
     optimizer = optim.AdamW(net.parameters(), lr=learning_rate, weight_decay=weight_decay)
 
@@ -81,7 +81,7 @@ def train(epoch_queue = None):
         optimizer,
         mode='min',
         factor=0.5,  # shrink LR by half
-        patience=4,  # wait 3 epochs of no improvement
+        patience=5,  # wait 3 epochs of no improvement
         min_lr=1e-7,  # don't shrink below this
     )
 
