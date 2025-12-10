@@ -98,6 +98,7 @@ def train():
     results_directory = "./results"
     os.makedirs(results_directory, exist_ok=True)
     filename_results = "./results/tests_results.csv"
+    filename_speakers_conf = "./results/speakers_conf_matrix.csv"
     # id is assigned automatically based on how many rows we have in the filename_results file
     experiment_id = get_experiment_id(filename_results)
 
@@ -164,8 +165,8 @@ def train():
 
     print("Testing the best model")
     net.load_state_dict((torch.load(f"./models/id_{experiment_id}_{model_name}.pth", map_location=device))['net_state_dict'])
-    test_metrics = calculate_metrics(net, test_loader, device)
-    val_metrics = calculate_metrics(net, val_loader, device)
+    test_metrics = calculate_metrics(net, test_loader, device, #TODO marcina to cos test)
+    val_metrics = calculate_metrics(net, val_loader, device, #TODO marcina to cos val)
     train_metrics = calculate_metrics(net, train_loader, device)
     save_to_csv_experiment_results(filename_results,
                                    experiment_id,
@@ -178,6 +179,11 @@ def train():
                                    max_epochs=max_epochs,
                                    best_epoch=best_epoch,
                                    notes="trying steplr with step 3 and gamma 0.7")
+    save_to_csv_speaker_confusion_matrix(filename_speakers_conf,
+                                         experiment_id,
+                                         experiment_name,
+                                         test_metrics['results_speakers'],
+                                         val_metrics['results_speakers'])
 
     print("TEST END")
 
@@ -219,7 +225,7 @@ def validate(net: SimpleCNN, criterion, valloader: DataLoader, device):
         return avg_loss
 
 
-def calculate_metrics(net: SimpleCNN, dataloader: DataLoader, device):
+def calculate_metrics(net: SimpleCNN, dataloader: DataLoader, device, speakers_labels=[]):
     all_predictions = []
     all_labels = []
     net.eval()
@@ -238,7 +244,7 @@ def calculate_metrics(net: SimpleCNN, dataloader: DataLoader, device):
     else:
         print(f"WARNING: Model only predicting one class: {set(all_predictions)}")
         true_negative, false_positive, false_negative, true_positive = (0,0,0,0)
-
+    
 
     accuracy = accuracy_score(all_labels, all_predictions)
     precision = precision_score(all_labels, all_predictions, zero_division=0) #tp / (tp + fp)
@@ -265,6 +271,25 @@ def calculate_metrics(net: SimpleCNN, dataloader: DataLoader, device):
     # This does not take label imbalance into account.
     f1_macro = f1_score(all_labels, all_predictions, average='macro', zero_division=0)
 
+    
+    
+    results_speakers = {}
+
+    if not speakers_labels.len()==0:
+        speakers_class1 = ['kasia', 'kuba', 'marcin', 'sylwia']
+        for sp in speakers_class1:
+            # get samples belonging to this speaker
+            sp_pred = predicted[speakers_labels == sp]
+
+            TP = np.sum(sp_pred == 1)
+            FN = np.sum(sp_pred == 0)
+
+            results_speakers[sp] = {
+                "TP": int(TP),
+                "FN": int(FN)
+            }
+
+
 
     results = {"accuracy": accuracy,
                "precision": precision,
@@ -277,7 +302,8 @@ def calculate_metrics(net: SimpleCNN, dataloader: DataLoader, device):
                "false_negative": false_negative,
                "true_positive": true_positive,
                'FAR': FAR,
-               'FRR': FRR
+               'FRR': FRR,
+               'results_speakers':results_speakers
                }
 
     return results
@@ -449,6 +475,73 @@ def save_to_csv_experiment_results(
     print(f"batch_size: {batch_size}")
     print(f"max_epochs: {max_epochs}")
     print(f"best_epoch: {best_epoch}")
+
+
+def save_to_csv_speaker_confusion_matrix(
+    filename,
+    experiment_id,
+    experiment_name,
+    test_results_speakers,
+    val_results_speakers,
+    notes=None,
+):
+
+    timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+    header = [
+        "experiment_id",
+        "timestamp",
+        "experiment_name",
+        "test_kasia_TP",
+        "test_kasia_FN", 
+        "test_kuba_TP",
+        "test_kuba_FN",
+        "test_marcin_TP",
+        "test_marcin_FN",
+        "test_sylwia_TP",
+        "test_sylwia_FN",
+        "val_kasia_TP",
+        "val_kasia_FN", 
+        "val_kuba_TP",
+        "val_kuba_FN",
+        "val_marcin_TP",
+        "val_marcin_FN",
+        "val_sylwia_TP",
+        "val_sylwia_FN",
+        "notes"
+    ]
+
+    row = [
+        experiment_id,
+        timestamp,
+        experiment_name,
+        test_results_speakers['kasia']['TP'],
+        test_results_speakers['kasia']['FN'],
+        test_results_speakers['kuba']['TP'],
+        test_results_speakers['kuba']['FN'],
+        test_results_speakers['marcin']['TP'],
+        test_results_speakers['marcin']['FN'],
+        test_results_speakers['sylwia']['TP'],
+        test_results_speakers['sylwia']['FN'],
+        val_results_speakers['kasia']['TP'],
+        val_results_speakers['kasia']['FN'],
+        val_results_speakers['kuba']['TP'],
+        val_results_speakers['kuba']['FN'],
+        val_results_speakers['marcin']['TP'],
+        val_results_speakers['marcin']['FN'],
+        val_results_speakers['sylwia']['TP'],
+        val_results_speakers['sylwia']['FN'],
+        notes if notes is not None else ""
+    ]
+
+    file_exists = os.path.isfile(filename)
+    with open(filename, "a", newline="") as f:
+        writer = csv.writer(f)
+        #if file does not exist write header first
+        if not file_exists:
+            writer.writerow(header)
+        writer.writerow(row)
+
+    print(f"Results saved to {filename}\n")
 
 
 def get_experiment_id(filename):
