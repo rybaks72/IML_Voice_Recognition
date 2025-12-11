@@ -15,19 +15,30 @@ from preprocessing_pipeline.util import random_data_split
 from src.resnet_model import ResNet18
 # from src.googlenet_model import GoogleNet
 # from src.mobilenet_model import MobileNetV2
-from src.train_util import time_mask, time_shift, freq_mask, get_threshold_roc, gauss_noise
+from src.train_util import time_mask, time_shift, freq_mask, get_threshold_roc, gauss_noise, vtlp
+from datetime import datetime
+from preprocessing_pipeline.util import random_data_split
 
 
-def augment_batch(x):
+def augment_batch(x, labels, sr=22050):
     if torch.rand((), device=x.device).item() < 0.5:
         x = time_mask(x, max_width=10)
     if torch.rand((), device=x.device).item() < 0.5:
         x = freq_mask(x, max_height=5)
     if torch.rand((), device=x.device).item() < 0.5:
         x = time_shift(x, max_shift=5)
-    if torch.rand((), device=x.device).item() < 0.5:
+    if torch.rand((), device=x.device).item() < 0.2:
         snr_db = float(torch.empty((), device=x.device).uniform_(10, 30).item())
         x = gauss_noise(x, snr_db)
+
+    # if torch.rand((), device=x.device).item() < 0.5:
+    #     labels_flat = labels.view(-1)
+    #     mask0 = (labels_flat == 0)
+
+    #     if mask0.any():
+    #         x_out = x.clone()
+    #         x_out[mask0] = vtlp(x_out[mask0], sr=sr)
+    #         return x_out
     return x
 #hehe
 def train():
@@ -57,7 +68,7 @@ def train():
     #model_name = "first_trial"
     #net = SimpleCNN().to(device)
 
-    model_name = "resnet_trial_111_64_drop_0.5_adam_lr_0.0001_batchnorm_after_relu"
+    model_name = "resnet_trial_222_32_drop_0.5_sgd_lr_0.01_mom09_wd_0.0001_sch_step_lr"
     net = ResNet18().to(device)
 
     # model_name = "googlenet_trial"
@@ -66,10 +77,18 @@ def train():
     # model_name = "mobilenet_trial"
     # net = MobileNetV2().to(device)
 
-    #criterion = nn.CrossEntropyLoss()
-    learning_rate = 0.0001
-    # weight_dec = 0.001
-    optimizer = optim.Adam(net.parameters(), lr=learning_rate)
+   
+    #learning_rate = 0.0001
+    #weight_dec = 0.005
+    #optimizer = optim.AdamW(net.parameters(), lr=learning_rate, weight_decay=weight_dec)
+    learning_rate = 0.01
+    optimizer = torch.optim.SGD(net.parameters(), lr=learning_rate, momentum=0.9, weight_decay=0.0001)
+
+#     scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(
+#     optimizer, 
+#     T_max=10,     #i think too aggressive
+#     eta_min=0.001 
+# )
 
    # optimizer = torch.optim.SGD(net.parameters(), lr=learning_rate, momentum=0.9, weight_decay=weight_dec)
 
@@ -79,6 +98,7 @@ def train():
     results_directory = "./results"
     os.makedirs(results_directory, exist_ok=True)
     filename_results = "./results/tests_results.csv"
+    filename_speakers_conf = "./results/speakers_conf_matrix.csv"
     # id is assigned automatically based on how many rows we have in the filename_results file
     experiment_id = get_experiment_id(filename_results)
 
@@ -87,13 +107,13 @@ def train():
 
     writer = SummaryWriter(log_dir=f"./tensor_board_outputs/id_{experiment_id}_{model_name}")
 
-#     scheduler = torch.optim.lr_scheduler.StepLR(
-#     optimizer,
-#     step_size=5,
-#     gamma=0.5
-# )
+    scheduler = torch.optim.lr_scheduler.StepLR(
+    optimizer,
+    step_size=3, # since my best epochs are often under 10 lets try this
+    gamma=0.7
+)
 
-    max_epochs = 10
+    max_epochs = 25
     best_epoch = 0
     print("TRAINING START")
     for epoch in range(max_epochs):  # loop over the dataset multiple times, this should be adjusted later
@@ -104,7 +124,7 @@ def train():
             inputs, labels = data
             print(f"inputs shape: {inputs.shape}")
             inputs, labels = inputs.float().to(device), labels.to(device)
-            inputs = augment_batch(inputs)
+            inputs = augment_batch(inputs, labels)
 
             optimizer.zero_grad()
 
@@ -141,11 +161,12 @@ def train():
 
         print(f"Epoch {epoch+1}, loss: {running_loss/len(train_loader):.3f}")
         #scheduler.step(val_loss)
+        scheduler.step()
 
     print("Testing the best model")
     net.load_state_dict((torch.load(f"./models/id_{experiment_id}_{model_name}.pth", map_location=device))['net_state_dict'])
-    test_metrics = calculate_metrics(net, test_loader, device)
-    val_metrics = calculate_metrics(net, val_loader, device)
+    test_metrics = calculate_metrics(net, test_loader, device, #TODO marcina to cos test)
+    val_metrics = calculate_metrics(net, val_loader, device, #TODO marcina to cos val)
     train_metrics = calculate_metrics(net, train_loader, device)
     save_to_csv_experiment_results(filename_results,
                                    experiment_id,
@@ -157,7 +178,12 @@ def train():
                                    batch_size= batch_size,
                                    max_epochs=max_epochs,
                                    best_epoch=best_epoch,
-                                   notes="batchnorm after instead of before relu")
+                                   notes="trying steplr with step 3 and gamma 0.7")
+    save_to_csv_speaker_confusion_matrix(filename_speakers_conf,
+                                         experiment_id,
+                                         experiment_name,
+                                         test_metrics['results_speakers'],
+                                         val_metrics['results_speakers'])
 
     print("TEST END")
 
@@ -199,7 +225,7 @@ def validate(net: SimpleCNN, criterion, valloader: DataLoader, device):
         return avg_loss
 
 
-def calculate_metrics(net: SimpleCNN, dataloader: DataLoader, device):
+def calculate_metrics(net: SimpleCNN, dataloader: DataLoader, device, speakers_labels=[]):
     all_predictions = []
     all_labels = []
     net.eval()
@@ -218,7 +244,7 @@ def calculate_metrics(net: SimpleCNN, dataloader: DataLoader, device):
     else:
         print(f"WARNING: Model only predicting one class: {set(all_predictions)}")
         true_negative, false_positive, false_negative, true_positive = (0,0,0,0)
-
+    
 
     accuracy = accuracy_score(all_labels, all_predictions)
     precision = precision_score(all_labels, all_predictions, zero_division=0) #tp / (tp + fp)
@@ -245,6 +271,25 @@ def calculate_metrics(net: SimpleCNN, dataloader: DataLoader, device):
     # This does not take label imbalance into account.
     f1_macro = f1_score(all_labels, all_predictions, average='macro', zero_division=0)
 
+    
+    
+    results_speakers = {}
+
+    if not speakers_labels.len()==0:
+        speakers_class1 = ['kasia', 'kuba', 'marcin', 'sylwia']
+        for sp in speakers_class1:
+            # get samples belonging to this speaker
+            sp_pred = predicted[speakers_labels == sp]
+
+            TP = np.sum(sp_pred == 1)
+            FN = np.sum(sp_pred == 0)
+
+            results_speakers[sp] = {
+                "TP": int(TP),
+                "FN": int(FN)
+            }
+
+
 
     results = {"accuracy": accuracy,
                "precision": precision,
@@ -257,7 +302,8 @@ def calculate_metrics(net: SimpleCNN, dataloader: DataLoader, device):
                "false_negative": false_negative,
                "true_positive": true_positive,
                'FAR': FAR,
-               'FRR': FRR
+               'FRR': FRR,
+               'results_speakers':results_speakers
                }
 
     return results
@@ -429,6 +475,73 @@ def save_to_csv_experiment_results(
     print(f"batch_size: {batch_size}")
     print(f"max_epochs: {max_epochs}")
     print(f"best_epoch: {best_epoch}")
+
+
+def save_to_csv_speaker_confusion_matrix(
+    filename,
+    experiment_id,
+    experiment_name,
+    test_results_speakers,
+    val_results_speakers,
+    notes=None,
+):
+
+    timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+    header = [
+        "experiment_id",
+        "timestamp",
+        "experiment_name",
+        "test_kasia_TP",
+        "test_kasia_FN", 
+        "test_kuba_TP",
+        "test_kuba_FN",
+        "test_marcin_TP",
+        "test_marcin_FN",
+        "test_sylwia_TP",
+        "test_sylwia_FN",
+        "val_kasia_TP",
+        "val_kasia_FN", 
+        "val_kuba_TP",
+        "val_kuba_FN",
+        "val_marcin_TP",
+        "val_marcin_FN",
+        "val_sylwia_TP",
+        "val_sylwia_FN",
+        "notes"
+    ]
+
+    row = [
+        experiment_id,
+        timestamp,
+        experiment_name,
+        test_results_speakers['kasia']['TP'],
+        test_results_speakers['kasia']['FN'],
+        test_results_speakers['kuba']['TP'],
+        test_results_speakers['kuba']['FN'],
+        test_results_speakers['marcin']['TP'],
+        test_results_speakers['marcin']['FN'],
+        test_results_speakers['sylwia']['TP'],
+        test_results_speakers['sylwia']['FN'],
+        val_results_speakers['kasia']['TP'],
+        val_results_speakers['kasia']['FN'],
+        val_results_speakers['kuba']['TP'],
+        val_results_speakers['kuba']['FN'],
+        val_results_speakers['marcin']['TP'],
+        val_results_speakers['marcin']['FN'],
+        val_results_speakers['sylwia']['TP'],
+        val_results_speakers['sylwia']['FN'],
+        notes if notes is not None else ""
+    ]
+
+    file_exists = os.path.isfile(filename)
+    with open(filename, "a", newline="") as f:
+        writer = csv.writer(f)
+        #if file does not exist write header first
+        if not file_exists:
+            writer.writerow(header)
+        writer.writerow(row)
+
+    print(f"Results saved to {filename}\n")
 
 
 def get_experiment_id(filename):
