@@ -24,14 +24,14 @@ def augment_batch(x, labels, sr=22050):
         snr_db = float(torch.empty((), device=x.device).uniform_(10, 30).item())
         x = gauss_noise(x, snr_db)
 
-    if torch.rand((), device=x.device).item() < 0.3:
-        labels_flat = labels.view(-1)
-        mask0 = (labels_flat == 0)
-
-        if mask0.any():
-            x_out = x.clone()
-            x_out[mask0] = vtlp(x_out[mask0], sr=sr)
-            return x_out
+    # if torch.rand((), device=x.device).item() < 0.3:
+    #     labels_flat = labels.view(-1)
+    #     mask0 = (labels_flat == 0)
+    #
+    #     if mask0.any():
+    #         x_out = x.clone()
+    #         x_out[mask0] = vtlp(x_out[mask0], sr=sr)
+    #         return x_out
     return x
 
 def train(epoch_queue = None):
@@ -60,12 +60,12 @@ def train(epoch_queue = None):
     samples_weight = torch.from_numpy(samples_weight).double()
     sampler = WeightedRandomSampler(samples_weight, num_samples=len(samples_weight), replacement=True)
 
-    train_loader = DataLoader(TensorDataset(x_train, y_train), batch_size=batch_size, sampler=sampler)
+    train_loader = DataLoader(TensorDataset(x_train, y_train), batch_size=batch_size, sampler=sampler) 
     val_loader = DataLoader(TensorDataset(x_valid, y_valid), batch_size=64, shuffle=False)
     test_loader = DataLoader(TensorDataset(x_test, y_test), batch_size=64, shuffle=False)
 
     weights = torch.tensor([1.0, data['weight']]).to(device)
-    #criterion = nn.CrossEntropyLoss(weight=weights)
+    #criterion = nn.CrossEntropyLoss(weight=weights)~
     criterion = nn.BCEWithLogitsLoss() #nn.BCEWithLogitsLoss(pos_weight=torch.tensor([np.sqrt(data["weight"])]).to(device))
     model_name = "first_trial_bce"
     net = SimpleCNN().to(device)

@@ -33,7 +33,7 @@ class SimpleCNN(nn.Module):
                                     #nn.GroupNorm(16, 128),
                                     nn.BatchNorm2d(128),
                                     nn.ReLU(),
-                                      # nn.BatchNorm2d(128),
+                                    # nn.BatchNorm2d(128),
                                     nn.MaxPool2d(kernel_size=(1,2)) )
 
         # input: 1 channel spectrogram (grayscale)
@@ -61,7 +61,7 @@ class SimpleCNN(nn.Module):
 
 
     def forward(self, x): #
-        # x = self.pool(F.relu(self.conv1(x))) #
+        # x = self.pool(F.relu(self.conv1(x)))
         # x = self.pool(F.relu(self.conv2(x)))
         x = self.conv1(x)
         x = self.conv2(x)
