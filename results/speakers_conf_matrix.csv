@@ -1,0 +1,7 @@
+experiment_id,timestamp,experiment_name,test_kasia_TP,test_kasia_FN,test_kuba_TP,test_kuba_FN,test_marcin_TP,test_marcin_FN,test_sylwia_TP,test_sylwia_FN,val_kasia_TP,val_kasia_FN,val_kuba_TP,val_kuba_FN,val_marcin_TP,val_marcin_FN,val_sylwia_TP,val_sylwia_FN,notes
+266,2025-12-11_15-06-53,resnet_trial_222_32_drop_0.5_sgd_lr_0.01_mom09_wd_0.0001_sch_step_lr,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+267,2025-12-11_15-09-45,resnet_trial_222_32_drop_0.5_sgd_lr_0.01_mom09_wd_0.0001_sch_step_lr,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,
+268,2025-12-11_15-11-18,resnet_trial_222_32_drop_0.5_sgd_lr_0.01_mom09_wd_0.0001_sch_step_lr,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,
+269,2025-12-11_15-13-16,resnet_trial_222_32_drop_0.5_sgd_lr_0.01_mom09_wd_0.0001_sch_step_lr,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,
+270,2025-12-11_15-17-51,resnet_trial_222_32_drop_0.5_sgd_lr_0.01_mom09_wd_0.0001_sch_step_lr,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,
+271,2025-12-11_15-22-38,resnet_trial_222_32_drop_0.5_sgd_lr_0.01_mom09_wd_0.0001_sch_step_lr,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,

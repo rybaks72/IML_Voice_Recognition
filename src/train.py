@@ -55,6 +55,13 @@ def train():
     x_valid, y_valid = data['validate']
     x_test, y_test = data['test']
 
+    test_labels = data['test_labels']
+    print(f"Test speaker labels length: {len(test_labels)}")
+    validate_labels = data['validate_labels']
+    print(f"Validate speaker labels length: {len(validate_labels)}")
+    print(f"Test labels all length: {len(y_test)}")
+    print(f"Validate labels all length: {len(y_valid)}")
+
     x_train = x_train.float()
     x_valid = x_valid.float()
     x_test = x_test.float()
@@ -113,7 +120,7 @@ def train():
     gamma=0.7
 )
 
-    max_epochs = 25
+    max_epochs = 1
     best_epoch = 0
     print("TRAINING START")
     for epoch in range(max_epochs):  # loop over the dataset multiple times, this should be adjusted later
@@ -165,8 +172,8 @@ def train():
 
     print("Testing the best model")
     net.load_state_dict((torch.load(f"./models/id_{experiment_id}_{model_name}.pth", map_location=device))['net_state_dict'])
-    test_metrics = calculate_metrics(net, test_loader, device, #TODO marcina to cos test)
-    val_metrics = calculate_metrics(net, val_loader, device, #TODO marcina to cos val)
+    test_metrics = calculate_metrics(net, test_loader, device, test_labels)
+    val_metrics = calculate_metrics(net, val_loader, device, validate_labels)
     train_metrics = calculate_metrics(net, train_loader, device)
     save_to_csv_experiment_results(filename_results,
                                    experiment_id,
@@ -178,10 +185,10 @@ def train():
                                    batch_size= batch_size,
                                    max_epochs=max_epochs,
                                    best_epoch=best_epoch,
-                                   notes="trying steplr with step 3 and gamma 0.7")
+                                   notes="DISMISS")
     save_to_csv_speaker_confusion_matrix(filename_speakers_conf,
                                          experiment_id,
-                                         experiment_name,
+                                         model_name,
                                          test_metrics['results_speakers'],
                                          val_metrics['results_speakers'])
 
@@ -275,14 +282,34 @@ def calculate_metrics(net: SimpleCNN, dataloader: DataLoader, device, speakers_l
     
     results_speakers = {}
 
-    if not speakers_labels.len()==0:
-        speakers_class1 = ['kasia', 'kuba', 'marcin', 'sylwia']
-        for sp in speakers_class1:
-            # get samples belonging to this speaker
-            sp_pred = predicted[speakers_labels == sp]
+    print(f"Speakers labels AGAIN length: {len(speakers_labels)}")
+    print(f"all predictions length AAAAAAAAAa: {len(all_predictions)}")
 
-            TP = np.sum(sp_pred == 1)
-            FN = np.sum(sp_pred == 0)
+    speaker_to_id = {name: i for i, name in enumerate(sorted(set(speakers_labels)))}
+    speakers_labels_ids = [speaker_to_id[name] for name in speakers_labels]
+    speakers_labels_ids = torch.tensor(speakers_labels_ids)
+
+    print(f"SPEKAR LABELS IDS LENGTH: {len(speakers_labels_ids)}")
+
+   # print(f"all predictions: {all_predictions}")
+    if not len(speakers_labels)==0:
+        speakers_class1 = ['kasia', 'kuba', 'marcin', 'sylwia']
+        speakers_class1_ids = [speaker_to_id[name] for name in speakers_class1] 
+        all_predictions_tensor = torch.tensor(all_predictions, dtype=torch.int64)
+        for sp in speakers_class1_ids:
+            # get samples belonging to this speaker
+            sth = (speakers_labels_ids == sp)
+            print(f"AAAAAAAAAAAAAAAAAAAAAAA sth: {sth}")
+            sp_pred = all_predictions_tensor[sth]
+            print(f"Speaker: {sp} predictions: ")
+            print(sp_pred)
+            print('\n')
+
+
+            TP = (sp_pred == 1).sum().item()
+            print(f"TP for {sp}: {TP}\n")
+            FN = (sp_pred == 0).sum().item()
+            print(f"FN for {sp}: {FN}\n")
 
             results_speakers[sp] = {
                 "TP": int(TP),
