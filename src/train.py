@@ -75,7 +75,7 @@ def train():
     #model_name = "first_trial"
     #net = SimpleCNN().to(device)
 
-    model_name = "resnet_trial_222_32_drop_0.5_sgd_lr_0.01_mom09_wd_0.0001_sch_step_lr"
+    model_name = "resnet_trial_222_32_drop_0.5_sgd_lr_0.001_mom09_wd_0.0001_no_sch"
     net = ResNet18().to(device)
 
     # model_name = "googlenet_trial"
@@ -88,7 +88,7 @@ def train():
     #learning_rate = 0.0001
     #weight_dec = 0.005
     #optimizer = optim.AdamW(net.parameters(), lr=learning_rate, weight_decay=weight_dec)
-    learning_rate = 0.01
+    learning_rate = 0.001
     optimizer = torch.optim.SGD(net.parameters(), lr=learning_rate, momentum=0.9, weight_decay=0.0001)
 
 #     scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(
@@ -114,13 +114,13 @@ def train():
 
     writer = SummaryWriter(log_dir=f"./tensor_board_outputs/id_{experiment_id}_{model_name}")
 
-    scheduler = torch.optim.lr_scheduler.StepLR(
-    optimizer,
-    step_size=3, # since my best epochs are often under 10 lets try this
-    gamma=0.7
-)
+#     scheduler = torch.optim.lr_scheduler.StepLR(
+#     optimizer,
+#     step_size=3, # since my best epochs are often under 10 lets try this
+#     gamma=0.7
+# )
 
-    max_epochs = 1
+    max_epochs = 25
     best_epoch = 0
     print("TRAINING START")
     for epoch in range(max_epochs):  # loop over the dataset multiple times, this should be adjusted later
@@ -168,7 +168,7 @@ def train():
 
         print(f"Epoch {epoch+1}, loss: {running_loss/len(train_loader):.3f}")
         #scheduler.step(val_loss)
-        scheduler.step()
+       # scheduler.step()
 
     print("Testing the best model")
     net.load_state_dict((torch.load(f"./models/id_{experiment_id}_{model_name}.pth", map_location=device))['net_state_dict'])
@@ -185,7 +185,8 @@ def train():
                                    batch_size= batch_size,
                                    max_epochs=max_epochs,
                                    best_epoch=best_epoch,
-                                   notes="DISMISS")
+                                   notes="BACK TO sgd 0.001 mom 0.9 wd 0.0001 no sch")
+
     save_to_csv_speaker_confusion_matrix(filename_speakers_conf,
                                          experiment_id,
                                          model_name,
@@ -282,23 +283,24 @@ def calculate_metrics(net: SimpleCNN, dataloader: DataLoader, device, speakers_l
     
     results_speakers = {}
 
-    print(f"Speakers labels AGAIN length: {len(speakers_labels)}")
-    print(f"all predictions length AAAAAAAAAa: {len(all_predictions)}")
+   # print(f"Speakers labels AGAIN length: {len(speakers_labels)}")
+   # print(f"all predictions length AAAAAAAAAa: {len(all_predictions)}")
 
     speaker_to_id = {name: i for i, name in enumerate(sorted(set(speakers_labels)))}
     speakers_labels_ids = [speaker_to_id[name] for name in speakers_labels]
     speakers_labels_ids = torch.tensor(speakers_labels_ids)
 
-    print(f"SPEKAR LABELS IDS LENGTH: {len(speakers_labels_ids)}")
+   # print(f"SPEKAR LABELS IDS LENGTH: {len(speakers_labels_ids)}")
 
    # print(f"all predictions: {all_predictions}")
     if not len(speakers_labels)==0:
         speakers_class1 = ['kasia', 'kuba', 'marcin', 'sylwia']
-        speakers_class1_ids = [speaker_to_id[name] for name in speakers_class1] 
+        #speakers_class1_ids = [speaker_to_id[name] for name in speakers_class1] 
         all_predictions_tensor = torch.tensor(all_predictions, dtype=torch.int64)
-        for sp in speakers_class1_ids:
+        for sp in speakers_class1:
+            sp_id = speaker_to_id[sp]
             # get samples belonging to this speaker
-            sth = (speakers_labels_ids == sp)
+            sth = (speakers_labels_ids == sp_id)
             print(f"AAAAAAAAAAAAAAAAAAAAAAA sth: {sth}")
             sp_pred = all_predictions_tensor[sth]
             print(f"Speaker: {sp} predictions: ")
@@ -312,8 +314,8 @@ def calculate_metrics(net: SimpleCNN, dataloader: DataLoader, device, speakers_l
             print(f"FN for {sp}: {FN}\n")
 
             results_speakers[sp] = {
-                "TP": int(TP),
-                "FN": int(FN)
+                "TP": round(TP/(TP+FN),4),
+                "FN": round(FN/(TP+FN),4),
             }
 
 
