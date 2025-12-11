@@ -4,6 +4,10 @@ import numpy as np
 import random as rand
 import librosa
 
+def get_name(path):
+    path = path.replace("\\", "/").split("/")
+    return path[-2]
+
 def helper(path_lists, train, test, validate):
     sets = [test, train, validate]
     count = 0
@@ -11,7 +15,7 @@ def helper(path_lists, train, test, validate):
         available_sets = [s for s in sets if s['length'] != 0]
         dataset = rand.choice(available_sets)
         dataset['length']-=1
-
+        dataset['labels'].append(get_name(path))
         specs = np.load(path, allow_pickle=True)
         dataset['X'].extend(specs['X'])
         dataset['Y'].extend(specs['Y'])
@@ -73,16 +77,19 @@ def random_data_split(path=".//"): #random test-train-validate datasets
     train = {
         'X': [],
         'Y': [],
+        'labels': [],
         'length': 14
     }
     test = {
         'X': [],
         'Y': [],
+        'labels': [],
         'length': 4
     }
     validate = {
         'X': [],
         'Y': [],
+        'labels': [],
         'length': 2
     }
     sets = [test, train, validate]
@@ -130,6 +137,9 @@ def random_data_split(path=".//"): #random test-train-validate datasets
     print(len(test['X']),len(test['Y']))
     print(len(validate['X']),len(validate['Y']))
     print(len(train['X']) + len(test['X']) +len(validate['X']))
+    print(train['labels'])
+    print(test['labels'])
+    print(validate['labels'])
     # print(train)
     # print(test)
     # print(validate)
@@ -138,6 +148,9 @@ def random_data_split(path=".//"): #random test-train-validate datasets
         'test': (torch.tensor(np.array(test['X'])).unsqueeze(1), torch.tensor(np.array(test['Y']))),
         'validate': (torch.tensor(np.array(validate['X'])).unsqueeze(1), torch.tensor(np.array(validate['Y']))),
         "weight": class0_count / class1_count,
+        'train_labels': train['labels'],
+        'test_labels': test['labels'],
+        'validate_labels': validate['labels'],
     }
 
 #preprocessing - normalize, trim, crop into 1 min audios, split into 3s clips
