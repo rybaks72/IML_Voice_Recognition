@@ -15,11 +15,11 @@ def helper(path_lists, train, test, validate):
         available_sets = [s for s in sets if s['length'] != 0]
         dataset = rand.choice(available_sets)
         dataset['length']-=1
-        dataset['labels'].append(get_name(path))
         specs = np.load(path, allow_pickle=True)
         dataset['X'].extend(specs['X'])
         dataset['Y'].extend(specs['Y'])
         count += len(specs["Y"])
+        dataset['labels'].extend([get_name(path)] * len(specs['Y']))
     return count
 
 RMS = None
@@ -137,9 +137,9 @@ def random_data_split(path=".//"): #random test-train-validate datasets
     print(len(test['X']),len(test['Y']))
     print(len(validate['X']),len(validate['Y']))
     print(len(train['X']) + len(test['X']) +len(validate['X']))
-    print(train['labels'])
-    print(test['labels'])
-    print(validate['labels'])
+    # print(len(train['labels']))
+    # print(len(test['labels']))
+    # print(len(validate['labels']))
     # print(train)
     # print(test)
     # print(validate)
@@ -197,4 +197,4 @@ def convert_with_pitch_shift(audio, sr, clip_length):
     spectrogram.extend(convert_to_spectograms(upper, sr, clip_length))
 
     return spectrogram
-#print(random_data_split())
+# print(random_data_split())
