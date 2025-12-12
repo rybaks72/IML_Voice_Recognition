@@ -15,8 +15,8 @@ def get_local_version():
 
 def get_kaggle_dataset_version():
     import kaggle
-    owner, dataset = DATASET.split("/")
-    meta = kaggle.api.dataset_metadata(owner, dataset)
+    owner, dt = DATASET.split("/")
+    meta = kaggle.api.dataset_metadata(owner, dt)
     return meta['versionNumber']
 
 def download():
