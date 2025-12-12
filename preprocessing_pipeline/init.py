@@ -26,7 +26,7 @@ def download():
         f.write(str(version))
 
 def download_data():
-    if not os.path.exists("./data"):
+    if not os.path.exists("./data") or get_local_version() is None:
         download()
         # print(kaggle.api.dataset_list_files(DATASET).files)
         print(f"Data successfully downloaded.")
