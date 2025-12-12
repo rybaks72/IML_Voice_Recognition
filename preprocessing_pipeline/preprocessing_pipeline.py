@@ -1,22 +1,9 @@
-import pandas as pd
 import numpy as np
-import matplotlib.pylab as plt
-import seaborn as sns
-
 from glob import glob
-from itertools import cycle
-
 import librosa
 import librosa.display
-import IPython.display as ipd
-import os
-from pathlib import Path
-
-import torch
-from init import dowload_data, create_directories
-from util import preprocess_data, convert_to_spectograms, convert_with_pitch_shift
-
-import gc
+from augmentation import augmentations
+import random as rand
 #GUIDE
 ###
 ##process_data(path, clip_length):
@@ -48,79 +35,101 @@ import gc
 ##create_raw_spectograms():
 ###
 
-#WHAT WAS DONE
-###
-# 1. Normalization
-# 2. Trimming silence
-# 3. Cropping clips to 1 min each
-# 4. Transforming voice memos into mel-spectograms
-
-# QUESTIONS
-# 1. Do we denoise? MOST IMPORTANT
-# 2. Do we augment data?
-# 3. Do we save the spectograms in files or do we just pass them as a function output
-###
-
 #save spectograms in .npz format
-def save_spectrogram(path,target_dir, spectrogram, label):
-    path, _ = os.path.splitext(path)
-    path = path.split("/")[2:][0].split("\\")
-    name = path[-1] + ".npz"
-    path.remove(path[-1])
-    path.append(name)
-    path = "/".join([f"{target_dir}", *path]).lower()
-    X = np.array(spectrogram)
-    Y = np.array([label] * len(spectrogram))
-    # print(f"X shape: {X.shape}")
-    # print(f"Y shape: {Y.shape}")
+RMS = None
 
-    np.savez_compressed(path, X=X, Y=Y)
+def get_rms():
+    global RMS
+    if RMS is not None:
+        return RMS
+    files = glob("./data/*/*/*.mp3")
+    total = 0
+    samples = 0
+    for file in files:
+        y, sr = librosa.load(file, sr=None)
+        total += np.sum(y ** 2)
+        samples += len(y)
+    RMS = np.sqrt(total / samples)
+    return np.sqrt(total / samples)
 
-def create_raw_spectrogram():
-    dowload_data()
-    create_directories("./raw_spectrogram")
-    class0 = glob("./data/Class0/*/*.mp3")
-    for path in class0:
-        y, sr = librosa.load(path)
-        S = librosa.feature.melspectrogram(y=y, sr=sr, n_mels=128, )
-        spectrogram = librosa.amplitude_to_db(S, ref=np.max)
-        save_spectrogram(path, "./raw_spectrogram", spectrogram, 0)
 
-    class1 = glob("./data/Class1/*/*.mp3")
-    for path in class1:
-        y, sr = librosa.load(path)
-        S = librosa.feature.melspectrogram(y=y, sr=sr, n_mels=128, )
-        spectrogram = librosa.amplitude_to_db(S, ref=np.max)
-        save_spectrogram(path, "./raw_spectrogram", spectrogram, 1)
+def rms_normalize(audio, rms):
+    clip_rms = np.sqrt(np.mean(audio ** 2))
+    scale = rms / clip_rms if clip_rms != 0 else rms
+    return audio * scale
 
-def spectrogram_conversion_loop(path_list, label, clip_length, pitch=False):
-    for path in path_list:
-        audio, sr = librosa.load(path)
-        if pitch:
-            spectrogram = convert_with_pitch_shift(audio, sr, clip_length)
-        else:
-            spectrogram = convert_to_spectograms(audio, sr, clip_length)
 
-        save_spectrogram(path, "./spectogram_data", spectrogram, label if pitch==False else 0)
-        del audio, spectrogram
-        gc.collect()
+# preprocessing - normalize, trim, crop into 1 min audios, split into 3s clips
+def preprocess_data(audio, sr, clip_length, rms=True, augment=False):
+    # y, sr = librosa.load(audio) #NOTE: librosa.load by default standardizes the sr to 22050 HZ
+    y_norm = rms_normalize(audio, get_rms()) if rms else librosa.util.normalize(audio)
 
-#function used to process gathered data
-def create_spectrogram_from_data(clip_length):
-    dowload_data()
-    create_directories("./spectogram_data")
+    y_trimmed, _ = librosa.effects.trim(y_norm, top_db=20)
+    intervals = librosa.effects.split(y_trimmed, top_db=20)
+    y_no_silence = np.concatenate([y_trimmed[interval[0]:interval[1]] for interval in intervals])
+    clip_length_samples = clip_length * sr
+    y_clips = librosa.util.frame(y_no_silence, frame_length=clip_length_samples,
+                                 hop_length=clip_length_samples).T.copy()
+    y_clips = [np.array(c) for c in y_clips]
 
-    class0 = glob("./data/Class0/*/*.mp3")
-    spectrogram_conversion_loop(class0, 0, clip_length)
-    class1 = glob("./data/Class1/*/*.mp3")
+    if augment:
+        aug_cpy = {k: {"fn": v["fn"], "count": v["count"]} for k, v in augmentations.items()}
+        for i in range(len(aug_cpy)):
+            if rand.random() < 0.5:
+                a = rand.choice([aug for aug in aug_cpy.values() if aug["count"] != 0])
+                a["count"] -= 1
+                aug_specs = a["fn"](y_clips, sr, clip_length)
+                if len(aug_specs) != len(y_clips):
+                    y_clips.extend(aug_specs)
 
-    # augmented_class0 = glob("./data/Class0/*/*.mp3")[1::4]
-    # spectrogram_conversion_loop(augmented_class0, 0, clip_length)
+    return y_clips
 
-    noise = glob("./data/Random_Noise/*/*.mp3")
-    spectrogram_conversion_loop(noise, 0, clip_length)
-
-    class1 = glob("./data/Class1/*/*.mp3")
-    spectrogram_conversion_loop(class1, 1, clip_length)
+#DEPRECATED
+# def create_raw_spectrogram():
+#     dowload_data()
+#     create_directories("./raw_spectrogram")
+#     class0 = glob("./data/Class0/*/*.mp3")
+#     for path in class0:
+#         y, sr = librosa.load(path)
+#         S = librosa.feature.melspectrogram(y=y, sr=sr, n_mels=128, )
+#         spectrogram = librosa.amplitude_to_db(S, ref=np.max)
+#         save_spectrogram(path, "./raw_spectrogram", spectrogram, 0)
+#
+#     class1 = glob("./data/Class1/*/*.mp3")
+#     for path in class1:
+#         y, sr = librosa.load(path)
+#         S = librosa.feature.melspectrogram(y=y, sr=sr, n_mels=128, )
+#         spectrogram = librosa.amplitude_to_db(S, ref=np.max)
+#         save_spectrogram(path, "./raw_spectrogram", spectrogram, 1)
+#
+# def spectrogram_conversion_loop(path_list, label, clip_length, pitch=False):
+#     for path in path_list:
+#         audio, sr = librosa.load(path)
+#         if pitch:
+#             spectrogram = convert_with_pitch_shift(audio, sr, clip_length)
+#         else:
+#             spectrogram = convert_to_spectograms(audio, sr, clip_length)
+#
+#         save_spectrogram(path, "./spectogram_data", spectrogram, label if pitch==False else 0)
+#         del audio, spectrogram
+#         gc.collect()
+#
+# #function used to process gathered data
+# def create_spectrogram_from_data(clip_length):
+#     dowload_data()
+#     create_directories("./spectogram_data")
+#
+#     class0 = glob("./data/Class0/*/*.mp3")
+#     spectrogram_conversion_loop(class0, 0, clip_length)
+#     class1 = glob("./data/Class1/*/*.mp3")
+#
+#     # augmented_class0 = glob("./data/Class0/*/*.mp3")[1::4]
+#     # spectrogram_conversion_loop(augmented_class0, 0, clip_length)
+#
+#     noise = glob("./data/Random_Noise/*/*.mp3")
+#     spectrogram_conversion_loop(noise, 0, clip_length)
+#
+#     class1 = glob("./data/Class1/*/*.mp3")
+#     spectrogram_conversion_loop(class1, 1, clip_length)
 # create_spectrogram_from_data(3)
 #create_raw_spectrogram()

@@ -1,111 +1,93 @@
-from glob import glob
 import torch
 import numpy as np
 import random as rand
-import librosa
+import librosa, gc
+from augmentation import pitch_shift
+from preprocessing_pipeline import preprocess_data
+from init import *
 
 def get_name(path):
     path = path.replace("\\", "/").split("/")
     return path[-2]
 
-def helper(path_lists, train, test, validate):
+#convert voice memo to spectograms
+def helper(path_lists, train, test, validate, clip_length, label):
     sets = [test, train, validate]
     count = 0
     for path in path_lists:
         available_sets = [s for s in sets if s['length'] != 0]
         dataset = rand.choice(available_sets)
-        dataset['length']-=1
-        specs = np.load(path, allow_pickle=True)
+        dataset['length'] -= 1
+        specs = {
+            'X': [],
+            'Y': []
+        }
+
+        audio, sr = librosa.load(path)
+        specs['X'].extend(preprocess_data(audio, sr, clip_length, augment=True if dataset['name'] == 'train' else False))
+        specs['Y'].extend([label] * len(specs['X']))
+
+        pitch_count = 0
+        if dataset['name'] == 'train':
+            pitched = pitch_shift(audio, sr, clip_length, pitch=3)
+            specs['X'].extend(pitched)
+            specs['Y'].extend([0] * len(pitched))
+            pitch_count = len(pitched)
+
+        specs['X'] = convert_to_spectrogram(specs['X'], sr)
         dataset['X'].extend(specs['X'])
         dataset['Y'].extend(specs['Y'])
         count += len(specs["Y"])
-        dataset['labels'].extend([get_name(path)] * len(specs['Y']))
+        dataset['labels'].extend([get_name(path)] * (len(specs['Y']) - pitch_count))
+        dataset['labels'].extend([f"pitched_{get_name(path)}"] * pitch_count)
+        del audio, sr
+    gc.collect()
     return count
 
-RMS = None
-
-def get_rms():
-    global RMS
-    if RMS is not None:
-        return RMS
-    files = glob("./data/*/*/*.mp3")
-    total = 0; samples = 0
-    for file in files:
-        y, sr = librosa.load(file, sr=None)
-        total += np.sum(y**2)
-        samples += len(y)
-    RMS = np.sqrt(total/samples)
-    return np.sqrt(total/samples)
-
-def add_gaussian_noise(signal, snr_db):
-    """
-    Add zero-mean Gaussian noise to `signal` to achieve target SNR (dB).
-    signal: 1D numpy array (mono), values roughly in [-1,1]
-    snr_db: desired SNR in dB (higher => cleaner)
-    """
-    sig_rms =  np.sqrt(np.mean(signal**2) + 1e-12)
-    # amplitude ratio from dB
-    ratio = 10.0 ** (snr_db / 20.0)
-    noise_rms = sig_rms / (ratio + 1e-12)
-
-    noise = np.random.randn(len(signal))
-    noise = noise * (noise_rms / (np.sqrt(np.mean(noise**2) + 1e-12) + 1e-12))
-
-    noisy = signal + noise
-    # soft peak normalization to avoid clipping
-    peak = np.max(np.abs(noisy))
-    if peak > 1.0:
-        noisy = noisy / peak
-    return noisy
-
-
-
-def rms_normalize(audio,rms):
-    clip_rms = np.sqrt(np.mean(audio**2))
-    scale = rms / clip_rms if clip_rms!=0 else rms
-    return audio * scale
-
 #INPUT: path to spectrogram data
-def random_data_split(path=".//"): #random test-train-validate datasets
-    class0 = glob(f"{path}/spectogram_data/Class0/*")
-    class1 = glob(f"{path}/spectogram_data/Class1/*")
-    noise_noise = glob(f"{path}/spectogram_data/Random_Noise/noise/*")
-    noise_people = glob(f"{path}/spectogram_data/Random_Noise/people/*")
+def random_data_split(path=".//", clip_length=3): #random test-train-validate datasets
+    dowload_data()
+    class0 = glob(f"{path}/data/Class0/*")
+    class1 = glob(f"{path}/data/Class1/*")
+    noise_noise = glob(f"{path}/data/Random_Noise/noise/*")
+    noise_people = glob(f"{path}/data/Random_Noise/people/*")
     #print(class1)
-
     #print(f"{path}/spectogram_data/Class1/*")
+
     train = {
         'X': [],
         'Y': [],
         'labels': [],
-        'length': 14
+        'length': 14,
+        'name': 'train'
     }
     test = {
         'X': [],
         'Y': [],
         'labels': [],
-        'length': 4
+        'length': 4,
+        'name': 'test'
     }
     validate = {
         'X': [],
         'Y': [],
         'labels': [],
-        'length': 2
+        'length': 2,
+        'name': 'validate'
     }
-    sets = [test, train, validate]
     #print(len(class0))
 
     class1_count = 0
     class0_count = 0
 
     for person in class0:
-        person_path = glob(f'{person}/*.npz')
-        #NOWE
-        train['length'] = 2
-        test['length'] = 1
+        person_path = glob(f'{person}/*.mp3')
+        #NEW
+        train['length'] = 1
+        test['length'] = 2
         validate['length'] = 1
-        class0_count += helper(person_path, train, test, validate)
-        ##STARE
+        class0_count += helper(person_path, train, test, validate, clip_length, label=0)
+        ##OLD
         # available_sets = [s for s in sets if s['length'] != 0]
         # dataset = rand.choice(available_sets)
         # dataset['length']-=1
@@ -115,23 +97,25 @@ def random_data_split(path=".//"): #random test-train-validate datasets
         #     dataset['Y'].extend(specs['Y'])
 
     for person in class1:
-         person_path = glob(f'{person}/*.npz')
+         person_path = glob(f'{person}/*.mp3')
          train['length'] = 10
          test['length'] = 3
          validate['length'] = 2
-         class1_count += helper(person_path, train, test, validate)
+         class1_count += helper(person_path, train, test, validate, clip_length, label=1)
 
     #noise_people
     train['length'] =  9
     test['length'] = 3
     validate['length'] = 2
-    class0_count += helper(noise_people,train,test,validate)
+    class0_count += helper(noise_people,train,test,validate, clip_length, label=0)
 
     #noise_noise
     train['length'] = 3
     test['length'] = 2
     validate['length'] = 1
-    class0_count += helper(noise_noise, train, test, validate)
+    class0_count += helper(noise_noise, train, test, validate, clip_length, label=0)
+
+
 
     print(len(train['X']),len(train['Y']))
     print(len(test['X']),len(test['Y']))
@@ -153,48 +137,53 @@ def random_data_split(path=".//"): #random test-train-validate datasets
         'validate_labels': validate['labels'],
     }
 
-#preprocessing - normalize, trim, crop into 1 min audios, split into 3s clips
-def preprocess_data(audio, sr, clip_length, rms=True, snr_range=(5.0, 20.0)):
-    #y, sr = librosa.load(audio) #NOTE: librosa.load by default standardizes the sr to 22050 HZ
-    y_norm = rms_normalize(audio, get_rms()) if rms else librosa.util.normalize(audio)
+def convert_to_spectrogram(audio_clips, sr):
+    #y_clips = preprocess_data(audio, sr, clip_length)
+    spectrogram = []
+    for sample in audio_clips:
+        s = librosa.feature.melspectrogram(y=sample, sr=sr, n_mels=128, )
+        s_pcen = librosa.pcen(s, sr=sr, time_constant=0.4,gain=0.4)
 
-    y_trimmed, _ = librosa.effects.trim(y_norm, top_db=20)
-    intervals = librosa.effects.split(y_trimmed, top_db=20)
-    y_no_silence = np.concatenate([y_trimmed[interval[0]:interval[1]] for interval in intervals])
-    clip_length_samples = clip_length * sr
-    # max_len = sr * 60
-    #
-    # y_cropped = y_trimmed[:max_len]
-    y_clips = librosa.util.frame(y_no_silence, frame_length=clip_length_samples, hop_length=clip_length_samples).T.copy()
-
-    # for i in range(len(y_clips)):
-    #     if rand.random() < 0.35:
-    #         snr_db = float(np.random.uniform(*snr_range))_
-    #         y_clips[i] = add_gaussian_noise(y_clips[i], snr_db)
-
-    return y_clips
-
-#convert voice memo to spectograms
-def convert_to_spectograms(audio, sr, clip_length):
-    y_clips = preprocess_data(audio, sr, clip_length)
-    spectograms = []
-
-    for sample in y_clips:
-        S = librosa.feature.melspectrogram(y=sample, sr=sr, n_mels=128, )
-        S_pcen = librosa.pcen(S, sr=sr, time_constant=0.4,gain=0.4)
-
-        spectograms.append(S_pcen)
-
-    return spectograms
-
-
-def convert_with_pitch_shift(audio, sr, clip_length):
-    lower = librosa.effects.pitch_shift(audio, sr=sr, n_steps=-3)
-    upper = librosa.effects.pitch_shift(audio, sr=sr, n_steps=3)
-
-    spectrogram = convert_to_spectograms(audio, sr, clip_length)
-    spectrogram.extend(convert_to_spectograms(lower, sr, clip_length))
-    spectrogram.extend(convert_to_spectograms(upper, sr, clip_length))
-
+        spectrogram.append(s_pcen)
     return spectrogram
-# print(random_data_split())
+
+##SPECTROGRAM UTIL
+def save_spectrogram(path,target_dir, spectrogram, label):
+    path, _ = os.path.splitext(path)
+    path = path.split("/")[2:][0].split("\\")
+    name = path[-1] + ".npz"
+    path.remove(path[-1])
+    path.append(name)
+    path = "/".join([f"{target_dir}", *path]).lower()
+    X = np.array(spectrogram)
+    Y = np.array([label] * len(spectrogram))
+    # print(f"X shape: {X.shape}")
+    # print(f"Y shape: {Y.shape}")
+
+    np.savez_compressed(path, X=X, Y=Y)
+
+def create_spectrogram_for_analysis(clip_length = 3):
+    dowload_data()
+    create_directories("./spectrogram_data")
+
+    class0 = glob("./data/Class0/*/*.mp3")
+    spectrogram_conversion_loop(class0, 0, clip_length)
+
+    # augmented_class0 = glob("./data/Class0/*/*.mp3")[1::4]
+    # spectrogram_conversion_loop(augmented_class0, 0, clip_length)
+
+    noise = glob("./data/Random_Noise/*/*.mp3")
+    spectrogram_conversion_loop(noise, 0, clip_length)
+
+    class1 = glob("./data/Class1/*/*.mp3")
+    spectrogram_conversion_loop(class1, 1, clip_length)
+
+def spectrogram_conversion_loop(path_list, label, clip_length):
+    for path in path_list:
+        audio, sr = librosa.load(path)
+        audio_clips = preprocess_data(audio, sr, clip_length)
+        spectrogram = convert_to_spectrogram(audio_clips, sr)
+
+        save_spectrogram(path, "./spectrogram_data", spectrogram, label)
+        del audio, spectrogram
+        gc.collect()

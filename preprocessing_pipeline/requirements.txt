@@ -5,3 +5,4 @@ matplotlib
 seaborn
 librosa
 IPython
+colab
