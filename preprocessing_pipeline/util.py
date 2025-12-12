@@ -4,7 +4,7 @@ import random as rand
 import librosa, gc
 from preprocessing_pipeline.augmentation import pitch_shift
 from preprocessing_pipeline.preprocessing import preprocess_data
-from init import *
+from preprocessing_pipeline.init import *
 
 def fix_len(audio, target_len):
     if len(audio) == target_len:
