@@ -98,21 +98,21 @@ def random_data_split(path=".//", clip_length=3): #random test-train-validate da
 
     for person in class1:
          person_path = glob(f'{person}/*.mp3')
-         train['length'] = 10
-         test['length'] = 3
-         validate['length'] = 2
+         train['length'] = 5
+         test['length'] = 7
+         validate['length'] = 3
          class1_count += helper(person_path, train, test, validate, clip_length, label=1)
 
     #noise_people
-    train['length'] =  9
-    test['length'] = 3
-    validate['length'] = 2
+    train['length'] =  4
+    test['length'] = 7
+    validate['length'] = 3
     class0_count += helper(noise_people,train,test,validate, clip_length, label=0)
 
     #noise_noise
-    train['length'] = 3
-    test['length'] = 2
-    validate['length'] = 1
+    train['length'] = 1
+    test['length'] = 3
+    validate['length'] = 2
     class0_count += helper(noise_noise, train, test, validate, clip_length, label=0)
 
 
