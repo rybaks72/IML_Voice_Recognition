@@ -56,7 +56,7 @@ def helper(path_lists, train, test, validate, clip_length, label):
 
 #INPUT: path to spectrogram data
 def random_data_split(path=".//", clip_length=3): #random test-train-validate datasets
-    dowload_data()
+    download_data()
     class0 = glob(f"{path}/data/Class0/*")
     class1 = glob(f"{path}/data/Class1/*")
     noise_noise = glob(f"{path}/data/Random_Noise/noise/*")
@@ -177,7 +177,7 @@ def save_spectrogram(path,target_dir, spectrogram, label):
     np.savez_compressed(path, X=X, Y=Y)
 
 def create_spectrogram_for_analysis(clip_length = 3):
-    dowload_data()
+    download_data()
     create_directories("./spectrogram_data")
 
     class0 = glob("./data/Class0/*/*.mp3")
@@ -202,4 +202,4 @@ def spectrogram_conversion_loop(path_list, label, clip_length):
         del audio, spectrogram
         gc.collect()
 
-print(random_data_split())
+# print(random_data_split())
