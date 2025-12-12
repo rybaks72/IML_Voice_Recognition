@@ -21,7 +21,7 @@ def get_kaggle_dataset_version():
 def download():
     import kaggle
     kaggle.api.authenticate()
-    version = kaggle.api.dataset_metadata(DATASET, path=".", unzip=True)['versionNumber']
+    version = get_kaggle_dataset_version()
     with open(VERSION_FILE, "w") as f:
         f.write(str(version))
 
