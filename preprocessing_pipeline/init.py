@@ -1,10 +1,10 @@
-import kaggle
 import os
 from glob import glob
 from pathlib import Path
 
 def dowload_data():
     if not os.path.exists("./data"):
+        import kaggle
         kaggle.api.authenticate()
         kaggle.api.dataset_download_files('quochoangvuvan/ml-voice-recognition', path=".", unzip=True)
 
