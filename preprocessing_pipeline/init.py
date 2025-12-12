@@ -1,4 +1,3 @@
-import kaggle
 import os
 from glob import glob
 from pathlib import Path
@@ -15,10 +14,12 @@ def get_local_version():
     return None
 
 def get_kaggle_dataset_version():
+    import kaggle
     meta = kaggle.api.dataset_metadata(DATASET)
     return meta['versionNumber']
 
 def download():
+    import kaggle
     kaggle.api.authenticate()
     kaggle.api.dataset_download_files(DATASET, path=".", unzip=True)
     version = kaggle.api.dataset_metadata(DATASET)['versionNumber']
