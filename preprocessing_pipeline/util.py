@@ -2,8 +2,8 @@ import torch
 import numpy as np
 import random as rand
 import librosa, gc
-from augmentation import pitch_shift
-from preprocessing_pipeline import preprocess_data
+from preprocessing_pipeline.augmentation import pitch_shift
+from preprocessing_pipeline.preprocessing import preprocess_data
 from init import *
 
 def fix_len(audio, target_len):

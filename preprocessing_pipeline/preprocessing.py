@@ -2,7 +2,7 @@ import numpy as np
 from glob import glob
 import librosa
 import librosa.display
-from augmentation import augmentations
+from preprocessing_pipeline.augmentation import augmentations
 import random as rand
 #GUIDE
 ###
