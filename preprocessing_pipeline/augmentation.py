@@ -2,27 +2,18 @@ import librosa
 import numpy as np
 
 
-def fix_len(audio, target_len):
-    if len(audio)>target_len:
-        return audio[:target_len]
-
-    repeats = target_len // len(audio) + 1
-    extended = np.tile(audio, repeats)
-    return extended[:target_len]
-
-def time_stretch(audio_clips, sr, clip_length, rate=0.2):
+def time_stretch(audio_clips, sr, rate=0.2):
     if rate == 0:
         return []
 
     augment = []
     for audio in audio_clips:
-        slower = fix_len(librosa.effects.time_stretch(audio ,rate= 1 -rate), sr*clip_length)
-        faster = fix_len(librosa.effects.time_stretch(audio ,rate= 1 +rate), sr*clip_length)
-        augment.extend([slower, faster])
+        augment.append(librosa.effects.time_stretch(audio ,rate= 1 -rate))
+        augment.append(librosa.effects.time_stretch(audio ,rate= 1 +rate))
 
     return augment
 
-def pitch_shift(audio_clips, sr, clip_length, pitch=0.5):
+def pitch_shift(audio_clips, sr, pitch=0.5):
     if pitch == 0:
         return []
 
@@ -34,14 +25,14 @@ def pitch_shift(audio_clips, sr, clip_length, pitch=0.5):
 
     return augment
 
-def guass_noise(audio_clips, sr, clip_length, snr_range=(5.0, 20.0)):
+def guass_noise(audio_clips, sr, snr_range=(5.0, 20.0)):
     for i in range(len(audio_clips)):
         snr_db = float(np.random.uniform(*snr_range))
         audio_clips[i] = add_gaussian_noise(audio_clips[i], snr_db=snr_db)
 
     return audio_clips
 
-def add_gaussian_noise(signal, sr, snr_db):
+def add_gaussian_noise(signal, snr_db):
     sig_rms =  np.sqrt(np.mean(signal**2) + 1e-12)
     # amplitude ratio from dB
     ratio = 10.0 ** (snr_db / 20.0)

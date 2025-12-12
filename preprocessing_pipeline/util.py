@@ -6,6 +6,16 @@ from augmentation import pitch_shift
 from preprocessing_pipeline import preprocess_data
 from init import *
 
+def fix_len(audio, target_len):
+    if len(audio) == target_len:
+        return audio
+    elif len(audio)>target_len:
+        return audio[:target_len]
+
+    repeats = target_len // len(audio) + 1
+    extended = np.tile(audio, repeats)
+    return extended[:target_len]
+
 def get_name(path):
     path = path.replace("\\", "/").split("/")
     return path[-2]
@@ -29,12 +39,12 @@ def helper(path_lists, train, test, validate, clip_length, label):
 
         pitch_count = 0
         if dataset['name'] == 'train':
-            pitched = pitch_shift(audio, sr, clip_length, pitch=3)
+            pitched = pitch_shift([audio], sr, pitch=3)
             specs['X'].extend(pitched)
             specs['Y'].extend([0] * len(pitched))
             pitch_count = len(pitched)
 
-        specs['X'] = convert_to_spectrogram(specs['X'], sr)
+        specs['X'] = convert_to_spectrogram(specs['X'], sr, clip_length)
         dataset['X'].extend(specs['X'])
         dataset['Y'].extend(specs['Y'])
         count += len(specs["Y"])
@@ -95,6 +105,7 @@ def random_data_split(path=".//", clip_length=3): #random test-train-validate da
         #     specs = np.load(path, allow_pickle=True)
         #     dataset['X'].extend(specs['X'])
         #     dataset['Y'].extend(specs['Y'])
+    print("Class0 done")
 
     for person in class1:
          person_path = glob(f'{person}/*.mp3')
@@ -102,19 +113,21 @@ def random_data_split(path=".//", clip_length=3): #random test-train-validate da
          test['length'] = 7
          validate['length'] = 3
          class1_count += helper(person_path, train, test, validate, clip_length, label=1)
+    print("Class1 done")
 
     #noise_people
     train['length'] =  4
     test['length'] = 7
     validate['length'] = 3
     class0_count += helper(noise_people,train,test,validate, clip_length, label=0)
+    print("Noise people done")
 
     #noise_noise
     train['length'] = 1
     test['length'] = 3
     validate['length'] = 2
     class0_count += helper(noise_noise, train, test, validate, clip_length, label=0)
-
+    print("Noise nosie done")
 
 
     print(len(train['X']),len(train['Y']))
@@ -137,10 +150,11 @@ def random_data_split(path=".//", clip_length=3): #random test-train-validate da
         'validate_labels': validate['labels'],
     }
 
-def convert_to_spectrogram(audio_clips, sr):
+def convert_to_spectrogram(audio_clips, sr, clip_length=3):
     #y_clips = preprocess_data(audio, sr, clip_length)
     spectrogram = []
     for sample in audio_clips:
+        sample = fix_len(sample, sr*clip_length)
         s = librosa.feature.melspectrogram(y=sample, sr=sr, n_mels=128, )
         s_pcen = librosa.pcen(s, sr=sr, time_constant=0.4,gain=0.4)
 
@@ -187,3 +201,5 @@ def spectrogram_conversion_loop(path_list, label, clip_length):
         save_spectrogram(path, "./spectrogram_data", spectrogram, label)
         del audio, spectrogram
         gc.collect()
+
+print(random_data_split())
