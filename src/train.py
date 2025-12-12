@@ -10,12 +10,11 @@ from src.model import SimpleCNN
 from torch.utils.tensorboard import SummaryWriter
 import csv
 import os
-from datetime import datetime
-from preprocessing_pipeline.util import random_data_split
+
 from src.resnet_model import ResNet18
 # from src.googlenet_model import GoogleNet
 # from src.mobilenet_model import MobileNetV2
-from src.train_util import time_mask, time_shift, freq_mask, get_threshold_roc, gauss_noise, vtlp
+from src.train_util import time_mask, time_shift, freq_mask, get_threshold_roc, gauss_noise
 from datetime import datetime
 from preprocessing_pipeline.util import random_data_split
 
