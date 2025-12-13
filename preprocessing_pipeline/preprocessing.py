@@ -56,6 +56,7 @@ def get_rms():
 def rms_normalize(audio, rms):
     clip_rms = np.sqrt(np.mean(audio ** 2))
     scale = rms / clip_rms if clip_rms != 0 else rms
+    scale = np.clip(scale, 0.5, 3)
     return audio * scale
 
 
@@ -64,8 +65,8 @@ def preprocess_data(audio, sr, clip_length, rms=True, augment=False):
     # y, sr = librosa.load(audio) #NOTE: librosa.load by default standardizes the sr to 22050 HZ
     y_norm = rms_normalize(audio, get_rms()) if rms else librosa.util.normalize(audio)
 
-    y_trimmed, _ = librosa.effects.trim(y_norm, top_db=20)
-    intervals = librosa.effects.split(y_trimmed, top_db=20)
+    y_trimmed, _ = librosa.effects.trim(y_norm, top_db=30)
+    intervals = librosa.effects.split(y_trimmed, top_db=30)
     y_no_silence = np.concatenate([y_trimmed[interval[0]:interval[1]] for interval in intervals])
     clip_length_samples = clip_length * sr
     y_clips = librosa.util.frame(y_no_silence, frame_length=clip_length_samples,
