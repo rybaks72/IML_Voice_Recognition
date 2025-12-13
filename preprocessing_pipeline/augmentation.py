@@ -2,7 +2,7 @@ import librosa
 import numpy as np, random as rand
 
 
-def time_stretch(audio_clips, sr, rate=0.2):
+def time_stretch(audio_clips, sr, rate=0.1):
     if rate == 0:
         return []
 
@@ -12,10 +12,14 @@ def time_stretch(audio_clips, sr, rate=0.2):
     #     augment.append(librosa.effects.time_stretch(audio ,rate= 1 +rate))
     #
     # return augment
+    l = len(audio_clips)
+    for i in range(l):
+        sign = -1 if rand.random() < 0.5 else 1
+        audio_clips[i] = librosa.effects.time_stretch(audio_clips[i] ,rate= 1 + sign*rate)
 
-    for i in range(len(audio_clips)):
-        audio_clips[i] = librosa.effects.time_stretch(audio_clips[i] ,rate= 1 +rate)
-
+        prob = rand.random()
+        if  prob < 0.25:
+            audio_clips.append(librosa.effects.time_stretch(audio_clips[i] ,rate=sign*0.2))
     return audio_clips
 
 def pitch_shift(audio_clips, sr, pitch=0.5):
@@ -29,9 +33,13 @@ def pitch_shift(audio_clips, sr, pitch=0.5):
     #     augment.append(librosa.effects.pitch_shift(audio, sr=sr, n_steps=pitch))
     #
     # return augment
-
-    for i in range(len(audio_clips)):
-        audio_clips[i] = librosa.effects.pitch_shift(audio_clips[i], sr=sr, n_steps=pitch * -1 if rand.random() < 0.5 else 1)
+    l = len(audio_clips)
+    for i in range(l):
+        sign = -1 if rand.random() < 0.5 else 1
+        audio_clips[i] = librosa.effects.pitch_shift(audio_clips[i], sr=sr, n_steps=pitch * sign)
+        prob = rand.random()
+        if  prob < 0.25:
+            audio_clips.append(librosa.effects.pitch_shift(audio_clips[i], sr=sr, n_steps=sign * 0.3))
 
     return audio_clips
 
