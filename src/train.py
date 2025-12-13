@@ -150,17 +150,18 @@ def train():
                 'train': loss.item(),
                 'validation': val_loss
             }, current_batch_num)
+            net.train()
 
             #save the best model yet
-            if val_loss < best_model_loss:
-                best_model_loss = val_loss
-                best_epoch = epoch
-                model_path = f"./models/id_{experiment_id}_{model_name}.pth"
-                torch.save({'epoch': epoch, 'batch': i, 'batch_num': current_batch_num,
-                            'net_state_dict': net.state_dict(),'val_loss': val_loss }, model_path)
-                print(f"BEST (val_loss: {val_loss:.4f}) epoch:{epoch} batch:{i} batch_num:{current_batch_num} train_loss:{loss.item():.4f}")
-            else:
-                print(f"No improvement: val_loss: {val_loss:.4f} epoch:{epoch} batch:{i} batch_num:{current_batch_num} train_loss:{loss.item():.4f}")
+        val_loss = validate(net, criterion, val_loader, device)
+        if val_loss < best_model_loss:
+            best_model_loss = val_loss
+            best_epoch = epoch
+            model_path = f"./models/id_{experiment_id}_{model_name}.pth"
+            torch.save({'epoch': epoch, 'net_state_dict': net.state_dict(),'val_loss': val_loss }, model_path)
+            print(f"BEST (val_loss: {val_loss:.4f}) epoch:{epoch}")
+        else:
+            print(f"No improvement: val_loss: {val_loss:.4f} epoch:{epoch} ")
 
             # return to training mode after validation
             net.train()
