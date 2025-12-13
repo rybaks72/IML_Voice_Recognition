@@ -59,7 +59,7 @@ def helper(path_lists, train, test, validate, clip_length, label):
         }
 
         audio, sr = librosa.load(path)
-        specs['X'].extend(preprocess_data(audio, sr, clip_length, augment=True if dataset['name'] == 'train' else False, label = label))
+        specs['X'].extend(preprocess_data(audio, sr, clip_length, augment=True if dataset['name'] == 'train' else False))
         specs['Y'].extend([label] * len(specs['X']))
 
         pitch_count = 0
