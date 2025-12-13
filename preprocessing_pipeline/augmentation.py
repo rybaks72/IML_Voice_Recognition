@@ -1,6 +1,36 @@
 import librosa
 import numpy as np, random as rand
+from scipy.signal import fftconvolve
 
+
+def generate_rir(length=256, decay=0.5):
+    rir = np.random.randn(length)
+    rir *= np.exp(-np.linspace(0, decay, length))  # exponential decay
+    rir = rir / (np.sqrt(np.sum(rir**2)) + 1e-12)  # energy-normalize
+    return rir
+
+RIR = [generate_rir(length=np.random.randint(120, 280), decay=np.random.uniform(0.3, 0.7)) for _ in range(12)]
+
+def reverb(audio):
+    rir = rand.choice(RIR)
+    reverbed = fftconvolve(audio, rir, mode="full")
+    reverbed = reverbed[:len(audio)]
+
+    # normalize to avoid clipping
+    peak = np.max(np.abs(reverbed)) + 1e-12
+    if peak > 1.0:
+        reverbed /= peak
+    return reverbed
+
+def reverberation(audio_clips, sr):
+    l = len(audio_clips)
+    for i in range(l):
+        if rand.random() < 0.3:
+            audio_clips.append(reverb(audio_clips[i].copy()))
+
+        audio_clips[i] = reverb(audio_clips[i])
+
+    return audio_clips
 
 def time_stretch(audio_clips, sr, rate=0.1):
     if rate == 0:
@@ -15,11 +45,12 @@ def time_stretch(audio_clips, sr, rate=0.1):
     l = len(audio_clips)
     for i in range(l):
         sign = -1 if rand.random() < 0.5 else 1
-        audio_clips[i] = librosa.effects.time_stretch(audio_clips[i] ,rate= 1 + sign*rate)
-
         prob = rand.random()
-        if  prob < 0.25:
-            audio_clips.append(librosa.effects.time_stretch(audio_clips[i] ,rate=sign*0.2))
+        orig = audio_clips[i].copy()
+        if prob < 0.25:
+            audio_clips.append(librosa.effects.time_stretch(orig, rate=1 + sign * 0.2))
+
+        audio_clips[i] = librosa.effects.time_stretch(orig, rate= 1 + sign*rate)
     return audio_clips
 
 def pitch_shift(audio_clips, sr, pitch=0.5):
@@ -34,12 +65,14 @@ def pitch_shift(audio_clips, sr, pitch=0.5):
     #
     # return augment
     l = len(audio_clips)
+    orig = audio_clips[i].copy()
     for i in range(l):
         sign = -1 if rand.random() < 0.5 else 1
-        audio_clips[i] = librosa.effects.pitch_shift(audio_clips[i], sr=sr, n_steps=pitch * sign)
         prob = rand.random()
-        if  prob < 0.25:
-            audio_clips.append(librosa.effects.pitch_shift(audio_clips[i], sr=sr, n_steps=sign * 0.3))
+        if prob < 0.25:
+            audio_clips.append(librosa.effects.pitch_shift(orig, sr=sr, n_steps=sign * 0.3))
+
+        audio_clips[i] = librosa.effects.pitch_shift(orig, sr=sr, n_steps=pitch * sign)
 
     return audio_clips
 
@@ -79,4 +112,8 @@ augmentations = {
         "fn": guass_noise,
         "count": 1
     },
+    "reverberation": {
+        "fn": reverberation,
+        "count": 1
+    }
 }
