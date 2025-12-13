@@ -301,7 +301,7 @@ def calculate_metrics(net: SimpleCNN, dataloader: DataLoader, device, speakers_l
             sp_id = speaker_to_id[sp]
             # get samples belonging to this speaker
             sth = (speakers_labels_ids == sp_id)
-            print(f"AAAAAAAAAAAAAAAAAAAAAAA sth: {sth}")
+            #print(f"AAAAAAAAAAAAAAAAAAAAAAA sth: {sth}")
             sp_pred = all_predictions_tensor[sth]
             print(f"Speaker: {sp} predictions: ")
             print(sp_pred)
