@@ -26,9 +26,9 @@ def augment_batch(x, labels, sr=22050):
         x = freq_mask(x, max_height=5)
     if torch.rand((), device=x.device).item() < 0.5:
         x = time_shift(x, max_shift=5)
-    if torch.rand((), device=x.device).item() < 0.2:
-        snr_db = float(torch.empty((), device=x.device).uniform_(10, 30).item())
-        x = gauss_noise(x, snr_db)
+    # if torch.rand((), device=x.device).item() < 0.2:
+    #     snr_db = float(torch.empty((), device=x.device).uniform_(10, 30).item())
+    #     x = gauss_noise(x, snr_db)
 
     # if torch.rand((), device=x.device).item() < 0.5:
     #     labels_flat = labels.view(-1)
@@ -66,8 +66,8 @@ def train():
     x_test = x_test.float()
     batch_size =32
     train_loader = DataLoader(TensorDataset(x_train, y_train), batch_size=batch_size, shuffle=True)
-    val_loader = DataLoader(TensorDataset(x_valid, y_valid), batch_size=8, shuffle=False)
-    test_loader = DataLoader(TensorDataset(x_test, y_test), batch_size=8, shuffle=False)
+    val_loader = DataLoader(TensorDataset(x_valid, y_valid), batch_size=32, shuffle=False)
+    test_loader = DataLoader(TensorDataset(x_test, y_test), batch_size=32, shuffle=False)
     weights = torch.tensor([1.0, data['weight']]).to(device)
     criterion = nn.CrossEntropyLoss(weight=weights)
 
@@ -161,12 +161,12 @@ def train():
             torch.save({'epoch': epoch, 'net_state_dict': net.state_dict(),'val_loss': val_loss }, model_path)
             print(f"BEST (val_loss: {val_loss:.4f}) epoch:{epoch}")
         else:
-            print(f"No improvement: val_loss: {val_loss:.4f} epoch:{epoch} ")
+            print(f"No improvement: val_loss: {val_loss:.4f} epoch:{epoch}  best:{best_epoch}")
 
             # return to training mode after validation
             net.train()
 
-        print(f"Epoch {epoch+1}, loss: {running_loss/len(train_loader):.3f}")
+        print(f"Epoch {epoch}, loss: {running_loss/len(train_loader):.3f}")
         #scheduler.step(val_loss)
        # scheduler.step()
 
