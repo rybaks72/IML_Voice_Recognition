@@ -49,7 +49,7 @@ def train():
     # if you want to run it from the src directory change the path below to "../preprocessing_pipeline" but in my case the imports did not work AND THEN
     # you have to change the path to models, results and tensor_board_outputs directory
     # I will try to fix that later so that you can change it in 1 place or maybe nowhere
-    data = random_data_split(path="./preprocessing_pipeline")
+    data = random_data_split(path="./")
     x_train, y_train = data['train']
     x_valid, y_valid = data['validate']
     x_test, y_test = data['test']
