@@ -25,7 +25,7 @@ def pitch_shift(audio_clips, sr, pitch=0.5):
 
     return augment
 
-def guass_noise(audio_clips, sr, snr_range=(5.0, 20.0)):
+def guass_noise(audio_clips, sr, snr_range=(20.0, 40.0)):
     for i in range(len(audio_clips)):
         snr_db = float(np.random.uniform(*snr_range))
         audio_clips[i] = add_gaussian_noise(audio_clips[i], snr_db=snr_db)
