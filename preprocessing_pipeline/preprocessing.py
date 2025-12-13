@@ -75,7 +75,7 @@ def preprocess_data(audio, sr, clip_length, rms=True, augment=False):
     if augment:
         aug_cpy = {k: {"fn": v["fn"], "count": v["count"]} for k, v in augmentations.items()}
         for i in range(len(aug_cpy)):
-            if rand.random() < 0.3:
+            if rand.random() < 0.4:
                 a = rand.choice([aug for aug in aug_cpy.values() if aug["count"] != 0])
                 a["count"] -= 1
                 aug_specs = a["fn"](y_clips, sr)

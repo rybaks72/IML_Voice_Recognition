@@ -38,11 +38,11 @@ def helper(path_lists, train, test, validate, clip_length, label):
         specs['Y'].extend([label] * len(specs['X']))
 
         pitch_count = 0
-        if dataset['name'] == 'train':
-            pitched = pitch_shift([audio], sr, pitch=3)
-            specs['X'].extend(pitched)
-            specs['Y'].extend([0] * len(pitched))
-            pitch_count = len(pitched)
+        # if dataset['name'] == 'train':
+        #     pitched = pitch_shift([audio], sr, pitch=3)
+        #     specs['X'].extend(pitched)
+        #     specs['Y'].extend([0] * len(pitched))
+        #     pitch_count = len(pitched)
 
         specs['X'] = convert_to_spectrogram(specs['X'], sr, clip_length)
         dataset['X'].extend(specs['X'])
