@@ -16,6 +16,31 @@ def fix_len(audio, target_len):
     extended = np.tile(audio, repeats)
     return extended[:target_len]
 
+def get_stats(clip_length=3):
+    total = 0.0
+    total_sq = 0.0
+    count = 0
+
+    for path in glob("./data/*/*/*.mp3"):
+        audio, sr = librosa.load(path, sr=None)
+        clips = preprocess_data(audio, sr, clip_length)
+
+        for clip in clips:
+            clip = fix_len(clip, sr * clip_length)
+
+            S = librosa.feature.melspectrogram(y=clip, sr=sr, n_mels=128)
+            S_log = librosa.power_to_db(S, ref=np.max)
+
+            total += S_log.sum()
+            total_sq += (S_log ** 2).sum()
+            count += S_log.size
+
+    mean = total / count
+    std = np.sqrt(total_sq / count - mean ** 2) + 1e-6
+
+    return mean, std
+MEAN, STD = get_stats()
+
 def get_name(path):
     path = path.replace("\\", "/").split("/")
     return path[-2]
@@ -34,7 +59,7 @@ def helper(path_lists, train, test, validate, clip_length, label):
         }
 
         audio, sr = librosa.load(path)
-        specs['X'].extend(preprocess_data(audio, sr, clip_length, augment=True if dataset['name'] == 'train' else False))
+        specs['X'].extend(preprocess_data(audio, sr, clip_length, augment=True if dataset['name'] == 'train' else False, label = label))
         specs['Y'].extend([label] * len(specs['X']))
 
         pitch_count = 0
@@ -156,9 +181,9 @@ def convert_to_spectrogram(audio_clips, sr, clip_length=3):
     for sample in audio_clips:
         sample = fix_len(sample, sr*clip_length)
         s = librosa.feature.melspectrogram(y=sample, sr=sr, n_mels=128, )
-        s_pcen = librosa.pcen(s, sr=sr, time_constant=0.4,gain=0.4)
-
-        spectrogram.append(s_pcen)
+        s_log = librosa.power_to_db(s, ref=np.max)
+        s_norm = (s_log-MEAN)/STD
+        spectrogram.append(s_norm)
     return spectrogram
 
 ##SPECTROGRAM UTIL

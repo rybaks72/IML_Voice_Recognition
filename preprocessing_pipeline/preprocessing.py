@@ -60,7 +60,7 @@ def rms_normalize(audio, rms):
 
 
 # preprocessing - normalize, trim, crop into 1 min audios, split into 3s clips
-def preprocess_data(audio, sr, clip_length, rms=True, augment=False):
+def preprocess_data(audio, sr, clip_length, rms=True, augment=False, label=0):
     # y, sr = librosa.load(audio) #NOTE: librosa.load by default standardizes the sr to 22050 HZ
     y_norm = rms_normalize(audio, get_rms()) if rms else librosa.util.normalize(audio)
 
@@ -75,7 +75,7 @@ def preprocess_data(audio, sr, clip_length, rms=True, augment=False):
     if augment:
         aug_cpy = {k: {"fn": v["fn"], "count": v["count"]} for k, v in augmentations.items()}
         for i in range(len(aug_cpy)):
-            if rand.random() < 0.4:
+            if rand.random() < 0.4 if label == 0 else 0.7:
                 a = rand.choice([aug for aug in aug_cpy.values() if aug["count"] != 0])
                 a["count"] -= 1
                 aug_specs = a["fn"](y_clips, sr)
