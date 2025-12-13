@@ -65,8 +65,8 @@ def pitch_shift(audio_clips, sr, pitch=0.5):
     #
     # return augment
     l = len(audio_clips)
-    orig = audio_clips[i].copy()
     for i in range(l):
+        orig = audio_clips[i].copy()
         sign = -1 if rand.random() < 0.5 else 1
         prob = rand.random()
         if prob < 0.25:
