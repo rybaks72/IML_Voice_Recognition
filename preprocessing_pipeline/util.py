@@ -6,6 +6,7 @@ from preprocessing_pipeline.augmentation import pitch_shift
 from preprocessing_pipeline.preprocessing import preprocess_data
 from preprocessing_pipeline.init import *
 
+
 def fix_len(audio, target_len):
     if len(audio) == target_len:
         return audio
@@ -17,6 +18,7 @@ def fix_len(audio, target_len):
     return extended[:target_len]
 
 def get_stats(clip_length=3):
+    download_data()
     total = 0.0
     total_sq = 0.0
     count = 0
@@ -39,6 +41,8 @@ def get_stats(clip_length=3):
     std = np.sqrt(total_sq / count - mean ** 2) + 1e-6
 
     return mean, std
+
+MEAN, STD = get_stats()
 
 def get_name(path):
     path = path.replace("\\", "/").split("/")
@@ -176,7 +180,6 @@ def random_data_split(path=".//", clip_length=3): #random test-train-validate da
 
 def convert_to_spectrogram(audio_clips, sr, clip_length=3):
     #y_clips = preprocess_data(audio, sr, clip_length)
-    MEAN, STD = get_stats()
     spectrogram = []
     for sample in audio_clips:
         sample = fix_len(sample, sr*clip_length)
