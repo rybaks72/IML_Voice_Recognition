@@ -145,9 +145,9 @@ def random_data_split(path="./", clip_length=3): #random test-train-validate dat
     print("Class1 done")
 
     #noise_people
-    train['length'] =  9
-    test['length'] = 3
-    validate['length'] = 2
+    train['length'] =  math.floor(0.7*len(noise_people))
+    validate['length'] = math.floor(0.1*len(noise_people))
+    test['length'] =len(noise_people) - train['length'] - validate['length']
     class0_count += helper(noise_people,train,test,validate, clip_length, label=0)
     print("Noise people done")
 
