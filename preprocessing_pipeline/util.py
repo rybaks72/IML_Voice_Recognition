@@ -5,6 +5,7 @@ import librosa, gc
 from preprocessing_pipeline.augmentation import pitch_shift
 from preprocessing_pipeline.preprocessing import preprocess_data
 from preprocessing_pipeline.init import *
+import math
 
 
 def fix_len(audio, target_len):
@@ -83,7 +84,7 @@ def helper(path_lists, train, test, validate, clip_length, label):
     return count
 
 #INPUT: path to spectrogram data
-def random_data_split(path=".//", clip_length=3): #random test-train-validate datasets
+def random_data_split(path="./", clip_length=3): #random test-train-validate datasets
     download_data()
     class0 = glob(f"{path}/data/Class0/*")
     class1 = glob(f"{path}/data/Class1/*")
@@ -137,9 +138,9 @@ def random_data_split(path=".//", clip_length=3): #random test-train-validate da
 
     for person in class1:
          person_path = glob(f'{person}/*.mp3')
-         train['length'] = 10
-         test['length'] = 3
-         validate['length'] = 2
+         train['length'] = math.floor(0.7*len(person_path))
+         validate['length'] = math.floor(0.1*len(person_path))
+         test['length'] = len(person_path) - train['length'] - validate['length']
          class1_count += helper(person_path, train, test, validate, clip_length, label=1)
     print("Class1 done")
 
@@ -230,4 +231,4 @@ def spectrogram_conversion_loop(path_list, label, clip_length):
         del audio, spectrogram
         gc.collect()
 
-# print(random_data_split())
+print(random_data_split())
