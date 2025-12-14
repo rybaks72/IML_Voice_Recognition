@@ -110,8 +110,7 @@ def train():
 
     #directory with models
     os.makedirs("./models", exist_ok=True)
-
-    writer = SummaryWriter(log_dir=f"./tensor_board_outputs/id_{experiment_id}_{model_name}")
+    writer = SummaryWriter(log_dir=f"./{get_tensorboard_logdir()}/id_{experiment_id}_{model_name}")
 
 #     scheduler = torch.optim.lr_scheduler.StepLR(
 #     optimizer,
@@ -579,6 +578,33 @@ def get_experiment_id(filename):
     with open(filename, "r") as f:
         num_lines = sum(1 for _ in f)
     return num_lines
+
+
+def get_tensorboard_logdir(base="tensor_board_outputs", max_items=100):
+    import re
+    if os.path.exists(base):
+        subdirs = [d for d in os.listdir(base)
+                   if os.path.isdir(os.path.join(base, d))]
+
+        if len(subdirs) > max_items:
+            parent = "."
+            rotated = [
+                d for d in os.listdir(parent)
+                if re.match(rf"{re.escape(base)}_\d+", d)
+                   and os.path.isdir(os.path.join(parent, d))
+            ]
+
+            if not rotated:
+                new_dir = f"{base}_1"
+            else:
+                nums = [int(d.split("_")[-1]) for d in rotated]
+                new_dir = f"{base}_{max(nums) + 1}"
+
+            os.makedirs(new_dir, exist_ok=True)
+            return new_dir
+    else:
+        os.makedirs(base, exist_ok=True)
+    return base
 
 if __name__ == "__main__":
     train()
