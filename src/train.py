@@ -184,7 +184,7 @@ def train():
                                    batch_size= batch_size,
                                    max_epochs=max_epochs,
                                    best_epoch=best_epoch,
-                                   notes="BACK TO sgd 0.001 mom 0.9 wd 0.0001 no sch")
+                                   notes=None)
 
     save_to_csv_speaker_confusion_matrix(filename_speakers_conf,
                                          experiment_id,
