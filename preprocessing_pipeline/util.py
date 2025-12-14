@@ -231,4 +231,4 @@ def spectrogram_conversion_loop(path_list, label, clip_length):
         del audio, spectrogram
         gc.collect()
 
-print(random_data_split())
+#print(random_data_split())
