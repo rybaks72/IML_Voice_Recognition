@@ -39,7 +39,6 @@ def get_stats(clip_length=3):
     std = np.sqrt(total_sq / count - mean ** 2) + 1e-6
 
     return mean, std
-MEAN, STD = get_stats()
 
 def get_name(path):
     path = path.replace("\\", "/").split("/")
@@ -177,6 +176,7 @@ def random_data_split(path=".//", clip_length=3): #random test-train-validate da
 
 def convert_to_spectrogram(audio_clips, sr, clip_length=3):
     #y_clips = preprocess_data(audio, sr, clip_length)
+    MEAN, STD = get_stats()
     spectrogram = []
     for sample in audio_clips:
         sample = fix_len(sample, sr*clip_length)
