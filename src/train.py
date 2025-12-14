@@ -583,25 +583,25 @@ def get_experiment_id(filename):
 def get_tensorboard_logdir(base="tensor_board_outputs", max_items=100):
     import re
     if os.path.exists(base):
-        subdirs = [d for d in os.listdir(base)
-                   if os.path.isdir(os.path.join(base, d))]
+        parent = "."
+        rotated = [
+            d for d in os.listdir(parent)
+            if re.fullmatch(rf"{re.escape(base)}(_(\d+))?$", d)
+               and os.path.isdir(os.path.join(parent, d))
+        ]
+        rotated.sort()
+        latest = rotated[-1]
+        latest_path = os.path.join(parent, latest)
 
-        if len(subdirs) > max_items:
-            parent = "."
-            rotated = [
-                d for d in os.listdir(parent)
-                if re.match(rf"{re.escape(base)}_\d+", d)
-                   and os.path.isdir(os.path.join(parent, d))
-            ]
+        subdirs = [d for d in os.listdir(latest_path)
+                   if os.path.isdir(os.path.join(latest_path, d))]
 
-            if not rotated:
-                new_dir = f"{base}_1"
-            else:
-                nums = [int(d.split("_")[-1]) for d in rotated]
-                new_dir = f"{base}_{max(nums) + 1}"
+        if len(subdirs) < max_items:
+            return latest_path
 
-            os.makedirs(new_dir, exist_ok=True)
-            return new_dir
+        new_dir = f"{base}_{len(rotated)}"
+        os.makedirs(new_dir, exist_ok=True)
+        return new_dir
     else:
         os.makedirs(base, exist_ok=True)
     return base
