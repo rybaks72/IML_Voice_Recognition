@@ -74,8 +74,10 @@ def train():
     #model_name = "first_trial"
     #net = SimpleCNN().to(device)
 
-    model_name = "resnet_trial_222_32_drop_0.5_sgd_lr_0.001_mom09_wd_0.0001_no_sch"
+    model_name = "resnet_trial_221_32_1_dropout_0.5_sgd_lr_0.01_wd_0.01_mom_0.9_no_wd"
     net = ResNet18().to(device)
+
+    notes = "testing sgd 0.01 mom 0.9 no wd again"
 
     # model_name = "googlenet_trial"
     # net = GoogleNet().to(device)
@@ -85,18 +87,18 @@ def train():
 
    
     #learning_rate = 0.0001
-    #weight_dec = 0.005
+    #weight_dec = 0.001
     #optimizer = optim.AdamW(net.parameters(), lr=learning_rate, weight_decay=weight_dec)
-    learning_rate = 0.001
-    optimizer = torch.optim.SGD(net.parameters(), lr=learning_rate, momentum=0.9, weight_decay=0.0001)
+    #optimizer = optim.Adam(net.parameters(), lr=learning_rate)
+    #optimizer = torch.optim.SGD(net.parameters(), lr=learning_rate, momentum=0.9, weight_decay=0.0001)
 
 #     scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(
 #     optimizer, 
 #     T_max=10,     #i think too aggressive
 #     eta_min=0.001 
 # )
-
-   # optimizer = torch.optim.SGD(net.parameters(), lr=learning_rate, momentum=0.9, weight_decay=weight_dec)
+    learning_rate = 0.01
+    optimizer = torch.optim.SGD(net.parameters(), lr=learning_rate, momentum=0.9)
 
     best_model_loss = float('inf')
 
@@ -127,7 +129,7 @@ def train():
         for i, data in enumerate(train_loader, 0):
 
             inputs, labels = data
-            print(f"inputs shape: {inputs.shape}")
+           # print(f"inputs shape: {inputs.shape}")
             inputs, labels = inputs.float().to(device), labels.to(device)
             inputs = augment_batch(inputs, labels)
 
@@ -142,17 +144,21 @@ def train():
 
             current_batch_num = epoch * len(train_loader) + i
 
-            val_loss = validate(net, criterion, val_loader, device)
+            #val_loss = validate(net, criterion, val_loader, device)
 
             # one plot with both
-            writer.add_scalars('loss', {
-                'train': loss.item(),
-                'validation': val_loss
-            }, current_batch_num)
-            net.train()
+            # writer.add_scalars('loss', {
+            #     'train': loss.item(),
+            #     'validation': val_loss
+            # }, current_batch_num)
+            #net.train()
 
-            #save the best model yet
+        #save the best model yet
         val_loss = validate(net, criterion, val_loader, device)
+        writer.add_scalars('loss', {
+                'train': running_loss/len(train_loader),
+                'validation': val_loss
+            }, epoch)
         if val_loss < best_model_loss:
             best_model_loss = val_loss
             best_epoch = epoch
@@ -185,7 +191,8 @@ def train():
                                    batch_size= batch_size,
                                    max_epochs=max_epochs,
                                    best_epoch=best_epoch,
-                                   notes=None)
+                                   notes=notes
+                                   )
 
     save_to_csv_speaker_confusion_matrix(filename_speakers_conf,
                                          experiment_id,
@@ -241,7 +248,7 @@ def calculate_metrics(net: SimpleCNN, dataloader: DataLoader, device, speakers_l
         for inputs,labels in dataloader:
             inputs, labels = inputs.to(device), labels.to(device)
             outputs = net(inputs)
-            _,predicted = torch.max(outputs, 1)
+           # _,predicted = torch.max(outputs, 1)
             probs = torch.softmax(outputs, dim=1)[:, 1]
             predicted = (probs > threshold).long()
             all_predictions.extend(predicted.cpu().numpy())

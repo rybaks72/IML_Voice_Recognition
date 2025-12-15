@@ -95,7 +95,7 @@ class ResNet(nn.Module):
         # Initial Convolutional Layer (handles 1-channel spectrogram input)
         # kernel_size=7, stride=2, MaxPool: typical for processing large images (spectrograms)
         self.conv1 = nn.Sequential(
-            nn.Conv2d(1, 32, kernel_size=7, stride=2, padding=3, bias=False),  # Input channel set to 1
+            nn.Conv2d(1, 32, kernel_size=3, stride=2, padding=3, bias=False),  # Input channel set to 1
             nn.BatchNorm2d(32),
             nn.ReLU(inplace=True),
             nn.MaxPool2d(kernel_size=3, stride=2, padding=1)
@@ -111,6 +111,12 @@ class ResNet(nn.Module):
         self.avgpool = nn.AdaptiveAvgPool2d((1, 1))
 
         #testing dropout layer
+        #self.dropout = nn.Dropout(p=0.5)
+
+        #testing multiple dropout layers
+        self.dropout1 = nn.Dropout(p=0.2)
+        self.dropout2 = nn.Dropout(p=0.2)
+        self.dropout3 = nn.Dropout(p=0.2)
         self.dropout = nn.Dropout(p=0.5)
 
         # Final Fully Connected Layer (Output classes set to 2)
@@ -129,8 +135,11 @@ class ResNet(nn.Module):
     def forward(self, x):
         out = self.conv1(x)
         out = self.layer1(out)
+       # out = self.dropout1(out)
         out = self.layer2(out)
+        #out = self.dropout2(out)
         out = self.layer3(out)
+       # out = self.dropout3(out)
        # out = self.layer4(out)
 
         # Apply Global Average Pooling
@@ -139,7 +148,6 @@ class ResNet(nn.Module):
         # Flattening from (Batch, 512, 1, 1) to (Batch, 512)
         out = torch.flatten(out, 1)
 
-        #add dropout 
         out = self.dropout(out)
 
         # Final Fully Connected Layer
@@ -151,4 +159,4 @@ class ResNet(nn.Module):
 def ResNet18():
     # Number of blocks in each layer for ResNet-18: [2, 2, 2, 2]
     # lets change to [1, 1, 1, 1]
-    return ResNet(BasicBlock, [2,2,2])
+    return ResNet(BasicBlock, [2, 2,1])

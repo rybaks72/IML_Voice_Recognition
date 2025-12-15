@@ -179,7 +179,7 @@ def random_data_split(path="./", clip_length=3): #random test-train-validate dat
         'validate_labels': validate['labels'],
     }
 
-def convert_to_spectrogram(audio_clips, sr, clip_length=3):
+def convert_to_spectrogram(audio_clips, sr, clip_length=1):
     #y_clips = preprocess_data(audio, sr, clip_length)
     spectrogram = []
     for sample in audio_clips:
