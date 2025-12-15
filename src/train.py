@@ -169,11 +169,12 @@ def train():
         #scheduler.step(val_loss)
        # scheduler.step()
 
-    print("Testing the best model")
+    threshold, auc = get_threshold_roc(net, val_loader, device)
+    print(f"Testing the best model, AUC: {auc:.4f}")
     net.load_state_dict((torch.load(f"./models/id_{experiment_id}_{model_name}.pth", map_location=device))['net_state_dict'])
-    test_metrics = calculate_metrics(net, test_loader, device, test_labels)
-    val_metrics = calculate_metrics(net, val_loader, device, validate_labels)
-    train_metrics = calculate_metrics(net, train_loader, device)
+    test_metrics = calculate_metrics(net, test_loader, device, test_labels, threshold)
+    val_metrics = calculate_metrics(net, val_loader, device, validate_labels, threshold)
+    train_metrics = calculate_metrics(net, train_loader, device, threshold)
     save_to_csv_experiment_results(filename_results,
                                    experiment_id,
                                    model_name,
@@ -232,7 +233,7 @@ def validate(net: SimpleCNN, criterion, valloader: DataLoader, device):
         return avg_loss
 
 
-def calculate_metrics(net: SimpleCNN, dataloader: DataLoader, device, speakers_labels=[]):
+def calculate_metrics(net: SimpleCNN, dataloader: DataLoader, device, speakers_labels=[], threshold=0.5):
     all_predictions = []
     all_labels = []
     net.eval()
@@ -241,6 +242,8 @@ def calculate_metrics(net: SimpleCNN, dataloader: DataLoader, device, speakers_l
             inputs, labels = inputs.to(device), labels.to(device)
             outputs = net(inputs)
             _,predicted = torch.max(outputs, 1)
+            probs = torch.softmax(outputs, dim=1)[:, 1]
+            predicted = (probs > threshold).long()
             all_predictions.extend(predicted.cpu().numpy())
             all_labels.extend(labels.cpu().numpy())
 

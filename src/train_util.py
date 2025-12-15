@@ -51,7 +51,7 @@ def get_threshold_roc(net, dataloader, device):
             x = x.to(device)
             y = y.to(device).float().view(-1)
             logits = net(x)                                     # Raw model outputs (before sigmoid)
-            probs = torch.sigmoid(logits).view(-1).cpu().numpy() # Convert logits → probabilities → numpy
+            probs = torch.softmax(logits, dim=1)[:, 1].cpu().numpy() # Convert logits → probabilities → numpy
             all_probabilities.append(probs)
             all_labels.append(y.cpu().numpy())
 
