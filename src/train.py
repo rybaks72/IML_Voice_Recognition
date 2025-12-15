@@ -172,7 +172,7 @@ def train():
     threshold, auc = get_threshold_roc(net, val_loader, device)
     print(f"Testing the best model, AUC: {auc:.4f}")
     net.load_state_dict((torch.load(f"./models/id_{experiment_id}_{model_name}.pth", map_location=device))['net_state_dict'])
-    test_metrics = calculate_metrics(net, test_loader, device, test_labels, threshold)
+    test_metrics = calculate_metrics(net, test_loader, device, test_labels, speakers_labels=[], threshold=threshold)
     val_metrics = calculate_metrics(net, val_loader, device, validate_labels, threshold)
     train_metrics = calculate_metrics(net, train_loader, device, threshold)
     save_to_csv_experiment_results(filename_results,
