@@ -33,9 +33,8 @@ def reverberation(audio_clips, sr):
     return audio_clips
 
 def time_stretch(audio_clips, sr, rate=0.1):
-    if rate == 0:
-        return []
-
+    if rate==0:
+        return audio_clips
     # augment = []
     # for audio in audio_clips:
     #     augment.append(librosa.effects.time_stretch(audio ,rate= 1 -rate))
@@ -54,8 +53,8 @@ def time_stretch(audio_clips, sr, rate=0.1):
     return audio_clips
 
 def pitch_shift(audio_clips, sr, pitch=0.5):
-    if pitch == 0:
-        return []
+    if pitch==0:
+        return audio_clips
 
     pitch = abs(pitch)
     # augment = []
@@ -102,18 +101,22 @@ def add_gaussian_noise(signal, snr_db):
 augmentations = {
     "time_stretch": {
         "fn": time_stretch,
-        "count": 1
+       # "count": 1,
+        "prob": [0.1, 0.3]
     },
     "pitch_shift": {
         "fn": pitch_shift,
-        "count": 1
+        #"count": 1,
+        "prob": [0.05, 0.3]
     },
     "guass_noise": {
         "fn": guass_noise,
-        "count": 1
+        #"count": 1,
+        "prob": [0.2, 0.3]
     },
     "reverberation": {
         "fn": reverberation,
-        "count": 1
+        #"count": 1,
+        "prob": [0.1, 0.4]
     }
 }

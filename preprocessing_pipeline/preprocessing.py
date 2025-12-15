@@ -61,7 +61,7 @@ def rms_normalize(audio, rms):
 
 
 # preprocessing - normalize, trim, crop into 1 min audios, split into 3s clips
-def preprocess_data(audio, sr, clip_length, rms=True, augment=False):
+def preprocess_data(audio, sr, clip_length, rms=True, augment=False, label=0):
     # y, sr = librosa.load(audio) #NOTE: librosa.load by default standardizes the sr to 22050 HZ
     y_norm = rms_normalize(audio, get_rms()) if rms else librosa.util.normalize(audio)
 
@@ -74,15 +74,32 @@ def preprocess_data(audio, sr, clip_length, rms=True, augment=False):
     y_clips = [np.array(c) for c in y_clips]
 
     if augment:
-        aug_cpy = {k: {"fn": v["fn"], "count": v["count"]} for k, v in augmentations.items()}
-        for i in range(len(aug_cpy)):
-            if rand.random() < 0.4:
-                a = rand.choice([aug for aug in aug_cpy.values() if aug["count"] != 0])
-                a["count"] -= 1
-                aug_specs = a["fn"](y_clips, sr)
-                if len(aug_specs) != len(y_clips):
-                    y_clips.extend(aug_specs)
+        if label == 0:
+            num_aug = np.random.choice([0, 1], p=[0.8, 0.2])
+        else:
+            num_aug = np.random.choice([0, 1, 2], p=[0.2, 0.5, 0.3])
 
+        aug_candidates = [
+            aug for aug in augmentations.values()
+            if rand.random() < aug["prob"][label]
+        ]
+        selected = rand.sample(
+            aug_candidates,
+            min(num_aug, len(aug_candidates))
+        )
+
+        for aug in selected:
+            y_clips = aug["fn"](y_clips, sr)
+
+        #
+        # aug_cpy = {k: {"fn": v["fn"], "count": v["count"]} for k, v in augmentations.items()}
+        # for i in range(len(aug_cpy)):
+        #     a = rand.choice([aug for aug in aug_cpy.values() if aug["count"] != 0])
+        #     if rand.random() < a["prob"][label]:
+        #         a["count"] -= 1
+        #         aug_specs = a["fn"](y_clips, sr,label)
+        #         if len(aug_specs) != len(y_clips):
+        #             y_clips.extend(aug_specs)
     return y_clips
 
 #DEPRECATED
