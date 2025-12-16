@@ -74,10 +74,10 @@ def train():
     #model_name = "first_trial"
     #net = SimpleCNN().to(device)
 
-    model_name = "resnet_trial_221_32_1_dropout_0.5_sgd_lr_0.01_wd_0.01_mom_0.9_no_wd"
+    model_name = "resnet_trial_221_32_1_dropout_0.5_adam_lr_0.0005_wd_0.01_clip_length_3_increased_aug_append_sch_cos"
     net = ResNet18().to(device)
 
-    notes = "testing sgd 0.01 mom 0.9 no wd again"
+    notes = "changed back adam lr 0.0005 and cosine annealing scheduler"
 
     # model_name = "googlenet_trial"
     # net = GoogleNet().to(device)
@@ -86,19 +86,19 @@ def train():
     # net = MobileNetV2().to(device)
 
    
-    #learning_rate = 0.0001
-    #weight_dec = 0.001
-    #optimizer = optim.AdamW(net.parameters(), lr=learning_rate, weight_decay=weight_dec)
+    learning_rate = 0.0005
+    weight_dec = 0.01
+    optimizer = optim.Adam(net.parameters(), lr=learning_rate, weight_decay=weight_dec)
     #optimizer = optim.Adam(net.parameters(), lr=learning_rate)
     #optimizer = torch.optim.SGD(net.parameters(), lr=learning_rate, momentum=0.9, weight_decay=0.0001)
 
-#     scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(
-#     optimizer, 
-#     T_max=10,     #i think too aggressive
-#     eta_min=0.001 
-# )
-    learning_rate = 0.01
-    optimizer = torch.optim.SGD(net.parameters(), lr=learning_rate, momentum=0.9)
+    scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(
+    optimizer, 
+    T_max=50,     
+    eta_min=0.000001 
+)
+    #learning_rate = 0.1
+   # optimizer = torch.optim.SGD(net.parameters(), lr=learning_rate)
 
     best_model_loss = float('inf')
 
@@ -120,7 +120,7 @@ def train():
 #     gamma=0.7
 # )
 
-    max_epochs = 25
+    max_epochs = 50
     best_epoch = 0
     print("TRAINING START")
     for epoch in range(max_epochs):  # loop over the dataset multiple times, this should be adjusted later
@@ -173,7 +173,7 @@ def train():
 
         print(f"Epoch {epoch}, loss: {running_loss/len(train_loader):.3f}")
         #scheduler.step(val_loss)
-       # scheduler.step()
+        scheduler.step()
 
     threshold, auc = get_threshold_roc(net, val_loader, device)
     print(f"Testing the best model, AUC: {auc:.4f}")
