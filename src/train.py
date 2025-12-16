@@ -74,10 +74,10 @@ def train():
     #model_name = "first_trial"
     #net = SimpleCNN().to(device)
 
-    model_name = "resnet_trial_221_32_1_dropout_0.5_adam_lr_0.0005_wd_0.01_clip_length_3_increased_aug_append_sch_cos"
+    model_name = "resnet_trial_221_32_1_dropout_0.5_adam_lr_0.0005_wd_0.01_clip_length_3_increased_aug_append_sch_steplr"
     net = ResNet18().to(device)
 
-    notes = "changed back adam lr 0.0005 and cosine annealing scheduler"
+    notes = "steplr sched step size 15 gamma 0.8"
 
     # model_name = "googlenet_trial"
     # net = GoogleNet().to(device)
@@ -92,11 +92,18 @@ def train():
     #optimizer = optim.Adam(net.parameters(), lr=learning_rate)
     #optimizer = torch.optim.SGD(net.parameters(), lr=learning_rate, momentum=0.9, weight_decay=0.0001)
 
-    scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(
-    optimizer, 
-    T_max=50,     
-    eta_min=0.000001 
-)
+    # scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(
+    # optimizer, 
+    # T_max=50,     
+    # eta_min=0.0002)
+
+    # scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(
+    # optimizer, 
+    # mode='min', 
+    # factor=0.9, #multiply by this
+    # patience=5, 
+    # min_lr=0.0001)
+
     #learning_rate = 0.1
    # optimizer = torch.optim.SGD(net.parameters(), lr=learning_rate)
 
@@ -114,11 +121,11 @@ def train():
     os.makedirs("./models", exist_ok=True)
     writer = SummaryWriter(log_dir=f"./{get_tensorboard_logdir()}/id_{experiment_id}_{model_name}")
 
-#     scheduler = torch.optim.lr_scheduler.StepLR(
-#     optimizer,
-#     step_size=3, # since my best epochs are often under 10 lets try this
-#     gamma=0.7
-# )
+    scheduler = torch.optim.lr_scheduler.StepLR(
+    optimizer,
+    step_size=15,
+    gamma=0.8
+)
 
     max_epochs = 50
     best_epoch = 0
