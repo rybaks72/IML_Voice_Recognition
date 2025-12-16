@@ -74,10 +74,10 @@ def train():
     #model_name = "first_trial"
     #net = SimpleCNN().to(device)
 
-    model_name = "resnet_trial_221_32_1_dropout_0.5_adam_lr_0.0005_wd_0.01_clip_length_3_increased_aug_append_sch_steplr"
+    model_name = "resnet_trial_221_32_1_dropout_0.5_adam_lr_0.0005_wd_0.01_clip_no_batch_norm"
     net = ResNet18().to(device)
 
-    notes = "steplr sched step size 15 gamma 0.8"
+    notes = "batch norm after act"
 
     # model_name = "googlenet_trial"
     # net = GoogleNet().to(device)
@@ -121,11 +121,11 @@ def train():
     os.makedirs("./models", exist_ok=True)
     writer = SummaryWriter(log_dir=f"./{get_tensorboard_logdir()}/id_{experiment_id}_{model_name}")
 
-    scheduler = torch.optim.lr_scheduler.StepLR(
-    optimizer,
-    step_size=15,
-    gamma=0.8
-)
+#     scheduler = torch.optim.lr_scheduler.StepLR(
+#     optimizer,
+#     step_size=15,
+#     gamma=0.8
+# )
 
     max_epochs = 50
     best_epoch = 0
@@ -180,7 +180,7 @@ def train():
 
         print(f"Epoch {epoch}, loss: {running_loss/len(train_loader):.3f}")
         #scheduler.step(val_loss)
-        scheduler.step()
+        # scheduler.step()
 
     threshold, auc = get_threshold_roc(net, val_loader, device)
     print(f"Testing the best model, AUC: {auc:.4f}")

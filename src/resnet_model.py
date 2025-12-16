@@ -40,6 +40,7 @@ class BasicBlock(nn.Module):
         )
         self.bn1 = nn.BatchNorm2d(out_channels)
         self.relu = nn.ReLU(inplace=True)
+        #self.bn1 = nn.BatchNorm2d(out_channels)
 
         # Second Conv layer + BN (ReLU is applied after the shortcut addition)
         self.conv2 = nn.Conv2d(
@@ -79,6 +80,7 @@ class BasicBlock(nn.Module):
         # Add the shortcut (Residual connection: H(x) = F(x) + x)
         out += self.shortcut(identity)
         out = self.relu(out)
+       # out = self.bn2(out)
 
         return out
 
@@ -98,6 +100,7 @@ class ResNet(nn.Module):
             nn.Conv2d(1, 32, kernel_size=3, stride=2, padding=3, bias=False),  # Input channel set to 1
             nn.BatchNorm2d(32),
             nn.ReLU(inplace=True),
+            #nn.BatchNorm2d(32),
             nn.MaxPool2d(kernel_size=3, stride=2, padding=1)
         )
 
