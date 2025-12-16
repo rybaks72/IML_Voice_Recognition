@@ -74,10 +74,11 @@ def train():
     #model_name = "first_trial"
     #net = SimpleCNN().to(device)
 
-    model_name = "resnet_trial_221_32_1_dropout_0.5_adam_lr_0.0005_wd_0.01_clip_no_batch_norm"
+    model_name = "resnet_trial_221_32_1_dropout_0.5_adam_lr_0.0005_wd_0.01_init_he"
     net = ResNet18().to(device)
+   # net.apply(initialization_uniform)
 
-    notes = "batch norm after act"
+    notes = "batch norm before activations, using initializations uniform"
 
     # model_name = "googlenet_trial"
     # net = GoogleNet().to(device)
@@ -212,6 +213,20 @@ def train():
     writer.close()
 
 
+
+def initialization_he(m):
+    if type(m) == nn.Conv2d or type(m) == nn.Linear:
+        nn.init.kaiming_normal_(m.weight, mode='fan_out', nonlinearity='relu')
+
+def initialization_xavier_normal(m):
+    if type(m) == nn.Conv2d or type(m) == nn.Linear:
+        nn.init.xavier_normal_(m.weight)
+#or should I test Xavier uniform?
+
+def initialization_uniform(m):
+    if type(m) == nn.Conv2d or type(m) == nn.Linear:
+        nn.init.uniform_(m.weight)
+        
 
 
 
