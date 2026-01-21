@@ -165,8 +165,8 @@ class ResNet(nn.Module):
             nn.BatchNorm2d(32),
             nn.ReLU(inplace=True),
             #nn.BatchNorm2d(32),
-            #nn.MaxPool2d(kernel_size=3, stride=2, padding=1)
-            nn.AvgPool2d(kernel_size=3, stride=2, padding=1)
+            nn.MaxPool2d(kernel_size=3, stride=2, padding=1)
+            #nn.AvgPool2d(kernel_size=3, stride=2, padding=1)
         )
 
         # Residual Blocks Layers
