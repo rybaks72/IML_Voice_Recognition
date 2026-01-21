@@ -21,21 +21,48 @@ ResNet (Residual Network) Architecture Rationale Summary:
 | **Stability** | Lower (Batch Norm is commented out) | **High (uses Batch Normalization extensively)** |
 """
 
+# #shortcut version 3
+
+# class SELayer(nn.Module):
+#     def __init__(self, channel, reduction=16):
+#         super(SELayer, self).__init__()
+#         self.avg_pool = nn.AdaptiveAvgPool2d(1)
+#         self.fc = nn.Sequential(
+#             nn.Linear(channel, channel // reduction, bias=False),
+#             nn.ReLU(inplace=True),
+#             nn.Linear(channel // reduction, channel, bias=False),
+#             # Sigmoid creates the "weight" (0 to 1) for each channel
+#             nn.Sigmoid()
+#         )
+
+#     def forward(self, x):
+#         b, c, _, _ = x.size()
+#         y = self.avg_pool(x).view(b, c)
+#         y = self.fc(y).view(b, c, 1, 1)
+#         return x * y.expand_as(x)
+
+
+
 # 1. Definition of the Basic Residual Block
 class BasicBlock(nn.Module):
     # For ResNet-18 and ResNet-34, the expansion factor is 1
     expansion = 1
-
-    def __init__(self, in_channels, out_channels, stride=1):
+ 
+    def __init__(self, in_channels, out_channels, stride=1, kernel_size=3):
         super(BasicBlock, self).__init__()
+        # #shortcut version 4
+        # self.stride = stride
+
+        # added padding calculation to safely chang ethe kernel size
+        pad = (kernel_size - 1) // 2
 
         # First Conv layer + BN + ReLU
         self.conv1 = nn.Conv2d(
             in_channels,
             out_channels,
-            kernel_size=3,
+            kernel_size=kernel_size,
             stride=stride,
-            padding=1,
+            padding=pad,
             bias=False
         )
         self.bn1 = nn.BatchNorm2d(out_channels)
@@ -46,13 +73,20 @@ class BasicBlock(nn.Module):
         self.conv2 = nn.Conv2d(
             out_channels,
             out_channels,
-            kernel_size=3,
+            kernel_size=kernel_size,
             stride=1,
-            padding=1,
+            padding=pad,
             bias=False
         )
         self.bn2 = nn.BatchNorm2d(out_channels)
 
+        #shortcut vrsion 4
+        self.shortcut = nn.Sequential()
+
+        # # shortcut version 3
+        # self.se = SELayer(out_channels, reduction=16)
+
+        #shortcut version1 and 3
         # Shortcut connection (Identity mapping)
         self.shortcut = nn.Sequential()
         # If input and output dimensions (channels or spatial size) differ,
@@ -62,7 +96,14 @@ class BasicBlock(nn.Module):
                 nn.Conv2d(in_channels, self.expansion * out_channels,
                           kernel_size=1, stride=stride, bias=False),
                 nn.BatchNorm2d(self.expansion * out_channels)
-            )
+           )
+
+        # # shortcut version 2
+        # self.shortcut = nn.Sequential(
+        #     nn.Conv2d(in_channels, self.expansion * out_channels, 
+        #             kernel_size=1, stride=stride, bias=False),
+        #     nn.BatchNorm2d(self.expansion * out_channels)
+        # )
 
     def forward(self, x):
         # Store the original input for the shortcut connection
@@ -76,6 +117,29 @@ class BasicBlock(nn.Module):
         
         out = self.conv2(out)
         out = self.bn2(out)
+
+       # out = self.se(out)
+
+        # # shortcut version 4
+        # # this replaces the 1x1 convolution shortcut
+        # if out.shape != identity.shape:
+        #     # average pooling to downsample spatial dimensions instead of conv layer (use stride to match spatial dimensions)
+        #     if self.stride > 1:
+        #         identity = F.avg_pool2d(identity, self.stride)
+            
+        #     #  check if spatial dimensions STILL don't match (runtime error before)
+        #     if identity.shape[2:] != out.shape[2:]:
+        #         identity = F.adaptive_avg_pool2d(identity, (out.shape[2], out.shape[3]))
+
+        #     # match the channel dimensions (Padding with zeros)
+        #     if out.shape[1] != identity.shape[1]:
+        #         pad_channels = out.shape[1] - identity.shape[1]
+        #         pad = torch.zeros(identity.shape[0], pad_channels, 
+        #                           identity.shape[2], identity.shape[3]).to(x.device)
+        #         identity = torch.cat([identity, pad], dim=1)
+            
+        # #  Add the identity to the output
+        # out += identity
 
         # Add the shortcut (Residual connection: H(x) = F(x) + x)
         out += self.shortcut(identity)
@@ -101,7 +165,8 @@ class ResNet(nn.Module):
             nn.BatchNorm2d(32),
             nn.ReLU(inplace=True),
             #nn.BatchNorm2d(32),
-            nn.MaxPool2d(kernel_size=3, stride=2, padding=1)
+            #nn.MaxPool2d(kernel_size=3, stride=2, padding=1)
+            nn.AvgPool2d(kernel_size=3, stride=2, padding=1)
         )
 
         # Residual Blocks Layers
@@ -112,6 +177,9 @@ class ResNet(nn.Module):
 
         # Global Average Pooling (used instead of Flattening to normalize output size)
         self.avgpool = nn.AdaptiveAvgPool2d((1, 1))
+
+        #testing global max pooling
+        #self.avgpool = nn.AdaptiveMaxPool2d((1, 1))
 
         #testing dropout layer
         #self.dropout = nn.Dropout(p=0.5)

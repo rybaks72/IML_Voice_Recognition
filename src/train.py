@@ -74,11 +74,11 @@ def train():
     #model_name = "first_trial"
     #net = SimpleCNN().to(device)
 
-    model_name = "resnet_trial_221_32_1_dropout_0.5_adam_lr_0.0005_wd_0.01_init_he"
+    model_name = "resnet_trial_221_32_1_dropout_0.5_adam_lr_0.0005_wd_0.01_conv_avgpool"
     net = ResNet18().to(device)
    # net.apply(initialization_uniform)
 
-    notes = "batch norm before activations, using initializations uniform"
+    notes = "avg pool in first conv layer instead of max pool"
 
     # model_name = "googlenet_trial"
     # net = GoogleNet().to(device)
