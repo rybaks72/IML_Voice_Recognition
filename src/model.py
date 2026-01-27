@@ -2,9 +2,15 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
-# simple model copied from the pytorch tutorial adjusted to our needs
-# for Milestone 1 we don't need anything fancy so this is the simplest way to
-# get us to >= F1 requirement
+"""
+This model takes a 1-channel input (e.g., grayscale spectrogram or image)
+    and processes it through 4 convolutional blocks, followed by fully connected
+    layers to produce a single output value.
+
+    Output can be used with:
+        - BCEWithLogitsLoss (preferred)
+        - Sigmoid activation for probability prediction
+"""
 class SimpleCNN(nn.Module):
     def __init__(self):
         super().__init__()
@@ -58,8 +64,21 @@ class SimpleCNN(nn.Module):
 
         self.fc3 = nn.Linear(64, 1)# binary output
 
+    """
+       Defines the forward pass of the network.
+       Steps:
+           1. Apply convolution blocks (feature extraction)
+           2. Apply global pooling
+           3. Flatten into vector
+           4. Fully connected classification layers
+           5. Output a single logit
 
+       Args:
+           x (Tensor): Input tensor of shape (batch_size, 1, H, W)
 
+       Returns:
+           Tensor: Output logits of shape (batch_size, 1)
+       """
     def forward(self, x): #
         # x = self.pool(F.relu(self.conv1(x)))
         # x = self.pool(F.relu(self.conv2(x)))

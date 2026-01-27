@@ -4,6 +4,11 @@ import numpy as np
 import random as rand
 import librosa
 
+"""
+helper: Loads spectrogram files and randomly distributes them into train/test/validate sets.
+Input: path_lists (list of .npz paths), train/test/validate (dict datasets)
+Output: Total number of samples added (int)
+"""
 def helper(path_lists, train, test, validate):
     sets = [test, train, validate]
     count = 0
@@ -22,6 +27,11 @@ def helper(path_lists, train, test, validate):
 
 RMS = None
 
+"""
+get_rms: Computes and caches the global RMS value across all dataset audio files.
+Input: None
+Output: Global RMS value (float)
+"""
 def get_rms():
     global RMS
     if RMS is not None:
@@ -35,12 +45,12 @@ def get_rms():
     RMS = np.sqrt(total/samples)
     return np.sqrt(total/samples)
 
+"""
+add_gaussian_noise: Adds Gaussian noise to an audio signal at a target SNR level.
+Input: signal (1D numpy array), snr_db (float)
+Output: Noisy audio signal (1D numpy array)
+"""
 def add_gaussian_noise(signal, snr_db):
-    """
-    Add zero-mean Gaussian noise to `signal` to achieve target SNR (dB).
-    signal: 1D numpy array (mono), values roughly in [-1,1]
-    snr_db: desired SNR in dB (higher => cleaner)
-    """
     sig_rms =  np.sqrt(np.mean(signal**2) + 1e-12)
     # amplitude ratio from dB
     ratio = 10.0 ** (snr_db / 20.0)
@@ -57,12 +67,21 @@ def add_gaussian_noise(signal, snr_db):
     return noisy
 
 
-
+"""
+rms_normalize: Scales an audio clip to match a target RMS loudness.
+Input: audio (numpy array), rms (float)
+Output: RMS-normalized audio (numpy array)
+"""
 def rms_normalize(audio,rms):
     clip_rms = np.sqrt(np.mean(audio**2))
     scale = rms / clip_rms if clip_rms!=0 else rms
     return audio * scale
 
+"""
+random_data_split: Randomly splits saved spectrogram data into train/test/validate tensors.
+Input: path (str)
+Output: Dictionary containing train/test/validate tensors and class weight (dict)
+"""
 #INPUT: path to spectrogram data
 def random_data_split(path="./"): #random test-train-validate datasets
     class0 = glob(f"{path}/spectogram_data/Class0/*")
@@ -100,7 +119,7 @@ def random_data_split(path="./"): #random test-train-validate datasets
         test['length'] = 1
         validate['length'] = 1
         class0_count += helper(person_path, train, test, validate)
-        ##STARE
+        ##OLD
         # available_sets = [s for s in sets if s['length'] != 0]
         # dataset = rand.choice(available_sets)
         # dataset['length']-=1
@@ -142,6 +161,11 @@ def random_data_split(path="./"): #random test-train-validate datasets
         "weight": class0_count / class1_count,
     }
 
+"""
+preprocess_data: Normalizes audio, removes silence, and splits into fixed-length clips.
+Input: audio (numpy array), sr (int), clip_length (int), rms (bool)
+Output: Array of audio clips (numpy array)
+"""
 #preprocessing - normalize, trim, crop into 1 min audios, split into 3s clips
 def preprocess_data(audio, sr, clip_length, rms=True, snr_range=(5.0, 20.0)):
     #y, sr = librosa.load(audio) #NOTE: librosa.load by default standardizes the sr to 22050 HZ
@@ -163,6 +187,11 @@ def preprocess_data(audio, sr, clip_length, rms=True, snr_range=(5.0, 20.0)):
 
     return y_clips
 
+"""
+convert_to_spectograms: Converts audio clips into PCEN-normalized mel spectrograms.
+Input: audio (numpy array), sr (int), clip_length (int)
+Output: List of spectrograms (list of numpy arrays)
+"""
 #convert voice memo to spectograms
 def convert_to_spectograms(audio, sr, clip_length):
 
@@ -178,6 +207,11 @@ def convert_to_spectograms(audio, sr, clip_length):
     return spectograms
 
 
+"""
+convert_with_pitch_shift: Creates pitch-shifted spectrogram versions of an audio clip.
+Input: audio (numpy array), sr (int), clip_length (int)
+Output: List containing lower and upper pitch spectrogram sets (list)
+"""
 def convert_with_pitch_shift(audio, sr, clip_length):
     lower = librosa.effects.pitch_shift(audio, sr=sr, n_steps=-3)
     upper = librosa.effects.pitch_shift(audio, sr=sr, n_steps=3)

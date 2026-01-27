@@ -48,20 +48,12 @@ import gc
 ##create_raw_spectograms():
 ###
 
-#WHAT WAS DONE
-###
-# 1. Normalization
-# 2. Trimming silence
-# 3. Cropping clips to 1 min each
-# 4. Transforming voice memos into mel-spectograms
 
-# QUESTIONS
-# 1. Do we denoise? MOST IMPORTANT
-# 2. Do we augment data?
-# 3. Do we save the spectograms in files or do we just pass them as a function output
-###
-
-#save spectograms in .npz format
+"""
+save_spectrogram: Saves a spectrogram and its label into a compressed .npz file.
+Input: path (str), target_dir (str), spectrogram (array-like), label (int)
+Output: None (writes file to disk)
+"""
 def save_spectrogram(path,target_dir, spectrogram, label):
     path, _ = os.path.splitext(path)
     path = path.split("\\")
@@ -78,6 +70,11 @@ def save_spectrogram(path,target_dir, spectrogram, label):
 
     np.savez_compressed(path, X=X, Y=Y)
 
+"""
+create_raw_spectrogram: Converts all audio files into raw mel spectrograms and saves them.
+Input: None
+Output: None (writes spectrogram files to ./raw_spectrogram)
+"""
 def create_raw_spectrogram():
     dowload_data()
     create_directories(".\\raw_spectrogram")
@@ -95,6 +92,11 @@ def create_raw_spectrogram():
         spectrogram = librosa.amplitude_to_db(S, ref=np.max)
         save_spectrogram(path, ".\\raw_spectrogram", spectrogram, 1)
 
+"""
+pitched_path: Generates a modified file path for pitch-augmented spectrogram outputs.
+Input: path (str), prefix (str)
+Output: New augmented path (str)
+"""
 def pitched_path(path, prefix):
     arr = path.split("\\")
     arr[2] = "Random_Noise"
@@ -103,6 +105,11 @@ def pitched_path(path, prefix):
     arr = ".\\".join(arr)
     return arr
 
+"""
+spectrogram_conversion_loop: Converts a list of audio files into spectrograms and saves them.
+Input: path_list (list), label (int), clip_length (int), pitch (bool)
+Output: None (writes spectrogram files to disk)
+"""
 def spectrogram_conversion_loop(path_list, label, clip_length, pitch=False, prefix=''):
     for path in path_list:
         audio, sr = librosa.load(path)
@@ -121,7 +128,11 @@ def spectrogram_conversion_loop(path_list, label, clip_length, pitch=False, pref
 
 
 
-#function used to process gathered data
+"""
+create_spectrogram_from_data: Builds the full spectrogram dataset from all audio files.
+Input: clip_length (int)
+Output: None (writes processed spectrogram dataset to ./spectogram_data)
+"""
 def create_spectrogram_from_data(clip_length):
     #dowload_data()
     create_directories(".\\spectogram_data")

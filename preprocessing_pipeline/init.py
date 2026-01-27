@@ -3,6 +3,8 @@ import os
 from glob import glob
 from pathlib import Path
 
+# Setup functions for downloading the Kaggle dataset and creating the required folder structure
+
 def dowload_data():
     if not os.path.exists(".\\data"):
         kaggle.api.authenticate()
