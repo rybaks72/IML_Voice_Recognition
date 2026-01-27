@@ -7,7 +7,11 @@ from preprocessing_pipeline.preprocessing import preprocess_data
 from preprocessing_pipeline.init import *
 import math
 
-
+"""
+fix_len: Pads or truncates an audio signal to a fixed target length.
+Input: audio (numpy array), target_len (int)
+Output: Audio signal with exact target length (numpy array)
+"""
 def fix_len(audio, target_len):
     if len(audio) == target_len:
         return audio
@@ -18,6 +22,11 @@ def fix_len(audio, target_len):
     extended = np.tile(audio, repeats)
     return extended[:target_len]
 
+"""
+get_stats: Computes mean and standard deviation of log-mel spectrogram values across the dataset.
+Input: clip_length (int)
+Output: Dataset spectrogram mean (float), standard deviation (float)
+"""
 def get_stats(clip_length=3):
     download_data()
     total = 0.0
@@ -45,10 +54,20 @@ def get_stats(clip_length=3):
 
 MEAN, STD = get_stats()
 
+"""
+get_name: Extracts speaker/person identifier from a file path.
+Input: path (str)
+Output: Speaker name (str)
+"""
 def get_name(path):
     path = path.replace("\\", "/").split("/")
     return path[-2]
 
+"""
+helper: Loads audio files, preprocesses them into clips, converts to spectrograms, and assigns them to datasets.
+Input: path_lists (list), train/test/validate (dict), clip_length (int), label (int)
+Output: Number of samples added (int)
+"""
 #convert voice memo to spectograms
 def helper(path_lists, train, test, validate, clip_length, label):
     sets = [test, train, validate]
@@ -83,6 +102,11 @@ def helper(path_lists, train, test, validate, clip_length, label):
     gc.collect()
     return count
 
+"""
+random_data_split: Splits dataset audio files into train/test/validate spectrogram tensors with optional augmentation.
+Input: path (str), clip_length (int)
+Output: Dictionary containing datasets, labels, and class weight (dict)
+"""
 #INPUT: path to spectrogram data
 def random_data_split(path="./", clip_length=3): #random test-train-validate datasets
     download_data()
@@ -179,6 +203,11 @@ def random_data_split(path="./", clip_length=3): #random test-train-validate dat
         'validate_labels': validate['labels'],
     }
 
+"""
+convert_to_spectrogram: Converts audio clips into normalized log-mel spectrograms.
+Input: audio_clips (list), sr (int), clip_length (int)
+Output: List of spectrogram arrays (list)
+"""
 def convert_to_spectrogram(audio_clips, sr, clip_length=3):
     #y_clips = preprocess_data(audio, sr, clip_length)
     spectrogram = []
@@ -190,7 +219,13 @@ def convert_to_spectrogram(audio_clips, sr, clip_length=3):
         spectrogram.append(s_norm)
     return spectrogram
 
+
 ##SPECTROGRAM UTIL
+"""
+save_spectrogram: Saves spectrogram data and labels into a compressed .npz file.
+Input: path (str), target_dir (str), spectrogram (list/array), label (int)
+Output: None (writes file to disk)
+"""
 def save_spectrogram(path,target_dir, spectrogram, label):
     path, _ = os.path.splitext(path)
     path = path.split("/")[2:][0].split("\\")
@@ -205,6 +240,11 @@ def save_spectrogram(path,target_dir, spectrogram, label):
 
     np.savez_compressed(path, X=X, Y=Y)
 
+"""
+create_spectrogram_for_analysis: Generates spectrogram files from the dataset for offline analysis.
+Input: clip_length (int)
+Output: None (writes spectrogram dataset to ./spectrogram_data)
+"""
 def create_spectrogram_for_analysis(clip_length = 3):
     download_data()
     create_directories("./spectrogram_data")
@@ -221,6 +261,11 @@ def create_spectrogram_for_analysis(clip_length = 3):
     class1 = glob("./data/Class1/*/*.mp3")
     spectrogram_conversion_loop(class1, 1, clip_length)
 
+"""
+spectrogram_conversion_loop: Converts audio files to spectrograms and saves them to disk.
+Input: path_list (list), label (int), clip_length (int)
+Output: None (writes spectrogram files)
+"""
 def spectrogram_conversion_loop(path_list, label, clip_length):
     for path in path_list:
         audio, sr = librosa.load(path)

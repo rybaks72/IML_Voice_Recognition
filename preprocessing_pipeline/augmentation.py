@@ -2,7 +2,11 @@ import librosa
 import numpy as np, random as rand
 from scipy.signal import fftconvolve
 
-
+"""
+generate_rir: Generates a random room impulse response for reverberation simulation.
+Input: length (int), decay (float)
+Output: Normalized RIR signal (numpy array)
+"""
 def generate_rir(length=256, decay=0.5):
     rir = np.random.randn(length)
     rir *= np.exp(-np.linspace(0, decay, length))  # exponential decay
@@ -11,6 +15,11 @@ def generate_rir(length=256, decay=0.5):
 
 RIR = [generate_rir(length=np.random.randint(120, 280), decay=np.random.uniform(0.3, 0.7)) for _ in range(12)]
 
+"""
+reverb: Applies reverberation to an audio signal using a random impulse response.
+Input: audio (numpy array)
+Output: Reverberated audio signal (numpy array)
+"""
 def reverb(audio):
     rir = rand.choice(RIR)
     reverbed = fftconvolve(audio, rir, mode="full")
@@ -22,6 +31,11 @@ def reverb(audio):
         reverbed /= peak
     return reverbed
 
+"""
+reverberation: Applies reverberation augmentation to a list of audio clips and may generate additional augmented clips.
+Input: audio_clips (list of numpy arrays), sr (int)
+Output: Augmented audio clips with reverberation applied (list)
+"""
 def reverberation(audio_clips, sr):
     l = len(audio_clips)
     for i in range(l):
@@ -32,6 +46,11 @@ def reverberation(audio_clips, sr):
 
     return audio_clips
 
+"""
+time_stretch: Randomly speeds up or slows down audio clips for augmentation and may generate additional augmented clips.
+Input: audio_clips (list), sr (int), rate (float)
+Output: Time-stretched audio clips (list)
+"""
 def time_stretch(audio_clips, sr, rate=0.1):
     if rate==0:
         return audio_clips
@@ -52,6 +71,11 @@ def time_stretch(audio_clips, sr, rate=0.1):
         audio_clips[i] = librosa.effects.time_stretch(orig, rate= 1 + sign*rate)
     return audio_clips
 
+"""
+pitch_shift: Shifts audio pitch up or down for augmentation and may generate additional augmented clips.
+Input: audio_clips (list), sr (int), pitch (float)
+Output: Pitch-shifted audio clips (list)
+"""
 def pitch_shift(audio_clips, sr, pitch=0.5):
     if pitch==0:
         return audio_clips
@@ -75,6 +99,11 @@ def pitch_shift(audio_clips, sr, pitch=0.5):
 
     return audio_clips
 
+"""
+guass_noise: Adds Gaussian noise to each audio clip with random SNR.
+Input: audio_clips (list), sr (int), snr_range (tuple)
+Output: Noisy audio clips (list)
+"""
 def guass_noise(audio_clips, sr, snr_range=(20.0, 40.0)):
     for i in range(len(audio_clips)):
         snr_db = float(np.random.uniform(*snr_range))
@@ -82,6 +111,11 @@ def guass_noise(audio_clips, sr, snr_range=(20.0, 40.0)):
 
     return audio_clips
 
+"""
+add_gaussian_noise: Adds Gaussian noise to a signal at a target SNR level.
+Input: signal (numpy array), snr_db (float)
+Output: Noisy signal (numpy array)
+"""
 def add_gaussian_noise(signal, snr_db):
     sig_rms =  np.sqrt(np.mean(signal**2) + 1e-12)
     # amplitude ratio from dB

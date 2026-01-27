@@ -2,6 +2,11 @@ import torch, numpy as np
 from sklearn.metrics import roc_curve, roc_auc_score
 import torch.nn.functional as F
 
+"""
+time_shift: Randomly shifts a spectrogram batch along the time axis.
+Input: x (Tensor) shape (B, 1, H, W), max_shift (int)
+Output: Time-shifted spectrogram batch (Tensor, same shape)
+"""
 def time_shift(x, max_shift=5):
     # x: (B, 1, H, W)
     x = x.clone()
@@ -10,6 +15,11 @@ def time_shift(x, max_shift=5):
         return x
     return torch.roll(x, shifts=shift, dims=-1)  # shift along W (time)
 
+"""
+freq_mask: Randomly masks frequency bands in spectrograms (SpecAugment).
+Input: x (Tensor) shape (B, 1, H, W), max_height (int)
+Output: Spectrogram batch with masked frequencies (Tensor)
+"""
 def freq_mask(x, max_height=5):
     x = x.clone()
     B, C, H, W = x.shape
@@ -21,6 +31,11 @@ def freq_mask(x, max_height=5):
         x[i, :, start:start+h, :] = 0.0
     return x
 
+"""
+time_mask: Randomly masks time segments in spectrograms.
+Input: x (Tensor) shape (B, 1, H, W), max_width (int)
+Output: Spectrogram batch with masked time regions (Tensor)
+"""
 def time_mask(x, max_width=10):
     # x: (B, 1, H, W)
     x = x.clone()
@@ -33,6 +48,11 @@ def time_mask(x, max_width=10):
         x[i, :, :, start:start+w] = 0.0
     return x
 
+"""
+gauss_noise: Adds Gaussian noise to spectrograms at a target SNR level.
+Input: x (Tensor), snr_db (float)
+Output: Noisy spectrogram batch (Tensor)
+"""
 def gauss_noise(x, snr_db):
     signal_pow = x.float().pow(2).mean().clamp(min=1e-12)
     snr_linear = 10 ** (snr_db / 10)
@@ -42,6 +62,11 @@ def gauss_noise(x, snr_db):
     noise = torch.randn_like(x) * sigma
     return torch.clamp(x + noise, min=0.0)
 
+"""
+get_threshold_roc: Computes ROC curve and returns the optimal classification threshold.
+Input: net (model), dataloader, device
+Output: Best threshold (float), AUC score (float)
+"""
 def get_threshold_roc(net, dataloader, device):
     net.eval()
     all_probabilities, all_labels = [], []
@@ -71,7 +96,11 @@ def get_threshold_roc(net, dataloader, device):
 
     return threshold, auc
 
-
+"""
+vtlp: Applies Vocal Tract Length Perturbation by warping spectrogram frequency bins.
+Input: spec (Tensor) shape (B, 1, M, T), sr (int), alpha range (float)
+Output: Frequency-warped spectrogram batch (Tensor, same shape)
+"""
 def vtlp(spec, sr=22050, alpha_min=0.8, alpha_max=1.2):
     B, C, M, T = spec.shape
     device = spec.device

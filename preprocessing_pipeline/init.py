@@ -7,7 +7,7 @@ from torch.utils.data import dataset
 
 VERSION_FILE = "./kaggle_version.txt"
 DATASET = 'quochoangvuvan/ml-voice-recognition'
-#
+# Initialization utilities for downloading the Kaggle dataset and creating the required directory structure
 # def get_local_version():
 #     if os.path.exists(VERSION_FILE):
 #         with open(VERSION_FILE, "r") as f:
