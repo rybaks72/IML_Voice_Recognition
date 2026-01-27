@@ -74,8 +74,11 @@ def train():
     #model_name = "first_trial"
     #net = SimpleCNN().to(device)
 
-    model_name = "resnet_trial_222_32_drop_0.5_sgd_lr_0.001_mom09_wd_0.0001_no_sch"
+    model_name = "resnet_trial_221_32_1_dropout_0.5_adam_lr_0.0005_wd_0.01_conv_avgpool"
     net = ResNet18().to(device)
+   # net.apply(initialization_uniform)
+
+    notes = "avg pool in first conv layer instead of max pool"
 
     # model_name = "googlenet_trial"
     # net = GoogleNet().to(device)
@@ -84,19 +87,26 @@ def train():
     # net = MobileNetV2().to(device)
 
    
-    #learning_rate = 0.0001
-    #weight_dec = 0.005
-    #optimizer = optim.AdamW(net.parameters(), lr=learning_rate, weight_decay=weight_dec)
-    learning_rate = 0.001
-    optimizer = torch.optim.SGD(net.parameters(), lr=learning_rate, momentum=0.9, weight_decay=0.0001)
+    learning_rate = 0.0005
+    weight_dec = 0.01
+    optimizer = optim.Adam(net.parameters(), lr=learning_rate, weight_decay=weight_dec)
+    #optimizer = optim.Adam(net.parameters(), lr=learning_rate)
+    #optimizer = torch.optim.SGD(net.parameters(), lr=learning_rate, momentum=0.9, weight_decay=0.0001)
 
-#     scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(
-#     optimizer, 
-#     T_max=10,     #i think too aggressive
-#     eta_min=0.001 
-# )
+    # scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(
+    # optimizer, 
+    # T_max=50,     
+    # eta_min=0.0002)
 
-   # optimizer = torch.optim.SGD(net.parameters(), lr=learning_rate, momentum=0.9, weight_decay=weight_dec)
+    # scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(
+    # optimizer, 
+    # mode='min', 
+    # factor=0.9, #multiply by this
+    # patience=5, 
+    # min_lr=0.0001)
+
+    #learning_rate = 0.1
+   # optimizer = torch.optim.SGD(net.parameters(), lr=learning_rate)
 
     best_model_loss = float('inf')
 
@@ -114,11 +124,11 @@ def train():
 
 #     scheduler = torch.optim.lr_scheduler.StepLR(
 #     optimizer,
-#     step_size=3, # since my best epochs are often under 10 lets try this
-#     gamma=0.7
+#     step_size=15,
+#     gamma=0.8
 # )
 
-    max_epochs = 25
+    max_epochs = 50
     best_epoch = 0
     print("TRAINING START")
     for epoch in range(max_epochs):  # loop over the dataset multiple times, this should be adjusted later
@@ -127,7 +137,7 @@ def train():
         for i, data in enumerate(train_loader, 0):
 
             inputs, labels = data
-            print(f"inputs shape: {inputs.shape}")
+           # print(f"inputs shape: {inputs.shape}")
             inputs, labels = inputs.float().to(device), labels.to(device)
             inputs = augment_batch(inputs, labels)
 
@@ -142,17 +152,21 @@ def train():
 
             current_batch_num = epoch * len(train_loader) + i
 
-            val_loss = validate(net, criterion, val_loader, device)
+            #val_loss = validate(net, criterion, val_loader, device)
 
             # one plot with both
-            writer.add_scalars('loss', {
-                'train': loss.item(),
-                'validation': val_loss
-            }, current_batch_num)
-            net.train()
+            # writer.add_scalars('loss', {
+            #     'train': loss.item(),
+            #     'validation': val_loss
+            # }, current_batch_num)
+            #net.train()
 
-            #save the best model yet
+        #save the best model yet
         val_loss = validate(net, criterion, val_loader, device)
+        writer.add_scalars('loss', {
+                'train': running_loss/len(train_loader),
+                'validation': val_loss
+            }, epoch)
         if val_loss < best_model_loss:
             best_model_loss = val_loss
             best_epoch = epoch
@@ -167,7 +181,7 @@ def train():
 
         print(f"Epoch {epoch}, loss: {running_loss/len(train_loader):.3f}")
         #scheduler.step(val_loss)
-       # scheduler.step()
+        # scheduler.step()
 
     threshold, auc = get_threshold_roc(net, val_loader, device)
     print(f"Testing the best model, AUC: {auc:.4f}")
@@ -185,7 +199,8 @@ def train():
                                    batch_size= batch_size,
                                    max_epochs=max_epochs,
                                    best_epoch=best_epoch,
-                                   notes=None)
+                                   notes=notes
+                                   )
 
     save_to_csv_speaker_confusion_matrix(filename_speakers_conf,
                                          experiment_id,
@@ -198,6 +213,20 @@ def train():
     writer.close()
 
 
+
+def initialization_he(m):
+    if type(m) == nn.Conv2d or type(m) == nn.Linear:
+        nn.init.kaiming_normal_(m.weight, mode='fan_out', nonlinearity='relu')
+
+def initialization_xavier_normal(m):
+    if type(m) == nn.Conv2d or type(m) == nn.Linear:
+        nn.init.xavier_normal_(m.weight)
+#or should I test Xavier uniform?
+
+def initialization_uniform(m):
+    if type(m) == nn.Conv2d or type(m) == nn.Linear:
+        nn.init.uniform_(m.weight)
+        
 
 
 
@@ -241,7 +270,7 @@ def calculate_metrics(net: SimpleCNN, dataloader: DataLoader, device, speakers_l
         for inputs,labels in dataloader:
             inputs, labels = inputs.to(device), labels.to(device)
             outputs = net(inputs)
-            _,predicted = torch.max(outputs, 1)
+           # _,predicted = torch.max(outputs, 1)
             probs = torch.softmax(outputs, dim=1)[:, 1]
             predicted = (probs > threshold).long()
             all_predictions.extend(predicted.cpu().numpy())

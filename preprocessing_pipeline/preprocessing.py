@@ -67,6 +67,7 @@ def preprocess_data(audio, sr, clip_length, rms=True, augment=False, label=0):
             aug for aug in augmentations.values()
             if rand.random() < aug["prob"][label]
         ]
+        
         selected = rand.sample(
             aug_candidates,
             min(num_aug, len(aug_candidates))

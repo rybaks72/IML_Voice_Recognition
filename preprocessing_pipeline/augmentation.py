@@ -39,10 +39,11 @@ Output: Augmented audio clips with reverberation applied (list)
 def reverberation(audio_clips, sr):
     l = len(audio_clips)
     for i in range(l):
-        if rand.random() < 0.3:
-            audio_clips.append(reverb(audio_clips[i].copy()))
+        # if rand.random() < 0.5:
+        #     audio_clips.append(reverb(audio_clips[i].copy()))
 
-        audio_clips[i] = reverb(audio_clips[i])
+        # audio_clips[i] = reverb(audio_clips[i])
+        audio_clips.append(reverb(audio_clips[i].copy()))
 
     return audio_clips
 
@@ -65,10 +66,11 @@ def time_stretch(audio_clips, sr, rate=0.1):
         sign = -1 if rand.random() < 0.5 else 1
         prob = rand.random()
         orig = audio_clips[i].copy()
-        if prob < 0.25:
-            audio_clips.append(librosa.effects.time_stretch(orig, rate=1 + sign * 0.2))
+        # if prob < 0.5:
+        #     audio_clips.append(librosa.effects.time_stretch(orig, rate=1 + sign * 0.2))
 
-        audio_clips[i] = librosa.effects.time_stretch(orig, rate= 1 + sign*rate)
+        # audio_clips[i] = librosa.effects.time_stretch(orig, rate= 1 + sign*rate)
+        audio_clips.append(librosa.effects.time_stretch(orig, rate=1 + sign * 0.2))
     return audio_clips
 
 """
@@ -92,10 +94,11 @@ def pitch_shift(audio_clips, sr, pitch=0.5):
         orig = audio_clips[i].copy()
         sign = -1 if rand.random() < 0.5 else 1
         prob = rand.random()
-        if prob < 0.25:
-            audio_clips.append(librosa.effects.pitch_shift(orig, sr=sr, n_steps=sign * 0.3))
+        # if prob < 0.5:
+        #     audio_clips.append(librosa.effects.pitch_shift(orig, sr=sr, n_steps=sign * 0.3))
 
-        audio_clips[i] = librosa.effects.pitch_shift(orig, sr=sr, n_steps=pitch * sign)
+        # audio_clips[i] = librosa.effects.pitch_shift(orig, sr=sr, n_steps=pitch * sign)
+        audio_clips.append(librosa.effects.pitch_shift(orig, sr=sr, n_steps=sign * 0.3))
 
     return audio_clips
 
@@ -132,25 +135,43 @@ def add_gaussian_noise(signal, snr_db):
         noisy = noisy / peak
     return noisy
 
+# augmentations = {
+#     "time_stretch": {
+#         "fn": time_stretch,
+#        # "count": 1,
+#         "prob": [0.1, 0.3]
+#     },
+#     "pitch_shift": {
+#         "fn": pitch_shift,
+#         #"count": 1,
+#         "prob": [0.05, 0.3]
+#     },
+#     "guass_noise": {
+#         "fn": guass_noise,
+#         #"count": 1,
+#         "prob": [0.2, 0.3]
+#     },
+#     "reverberation": {
+#         "fn": reverberation,
+#         #"count": 1,
+#         "prob": [0.1, 0.4]
+#     }
+# }
+
 augmentations = {
-    "time_stretch": {
-        "fn": time_stretch,
-       # "count": 1,
-        "prob": [0.1, 0.3]
-    },
-    "pitch_shift": {
-        "fn": pitch_shift,
-        #"count": 1,
-        "prob": [0.05, 0.3]
-    },
+    
     "guass_noise": {
         "fn": guass_noise,
         #"count": 1,
         "prob": [0.2, 0.3]
     },
-    "reverberation": {
-        "fn": reverberation,
-        #"count": 1,
-        "prob": [0.1, 0.4]
-    }
+
+    # "reverberation": {
+    #     "fn": reverberation,
+    #     #"count": 1,
+    #     "prob": [0.1, 0.4]
+    # }
+    
+    
 }
+
