@@ -14,6 +14,17 @@ from preprocessing_pipeline.util import random_data_split
 from torch.utils.data import WeightedRandomSampler
 
 def augment_batch(x, labels, sr=22050):
+    """
+    Apply random data augmentation techniques to a batch of spectrograms.
+
+    Arguments:
+    x (torch.Tensor): Input spectrogram batch of shape (batch_size, channels, time, freq).
+    labels (torch.Tensor): Labels for the batch.
+    sr (int, optional): Sample rate in Hz. Default is 22050. Not used in augmentations.
+    
+    Returns:
+    torch.Tensor: Augmented spectrogram batch with same shape as input.
+    """
     if torch.rand((), device=x.device).item() < 0.3:
         x = time_mask(x, max_width=10)
     if torch.rand((), device=x.device).item() < 0.3:
@@ -35,14 +46,24 @@ def augment_batch(x, labels, sr=22050):
     return x
 
 def train(epoch_queue = None):
+    """
+    This is our final training loop.
+    
+    This function consists of the complete training pipeline:
+    1. Load preprocessed training, validation, and test data
+    2. Initialize model, optimizer, and loss criterion
+    3. Train for specified number of epochs with validation after each epoch
+    4. Save best model based on validation loss
+    5. Evaluate final model on test set
+    6. Log all results and metrics to CSV and TensorBoard
+    
+    IMPORTANT NOTE: Must be run from IML_voice_recognition directory using 'python -m src.train' to ensure correct relative imports and results file paths.
+    """
     #model, inputs and labels have to be on the same device
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     print(f"Using device: {device}")
-    # changed path here
-    #IMPORTANT run it from IML_voice_recognition directory using python -m src.train or at least this way it works for me
-    # if you want to run it from the src directory change the path below to "../preprocessing_pipeline" but in my case the imports did not work AND THEN
-    # you have to change the path to models, results and tensor_board_outputs directory
-    # I will try to fix that later so that you can change it in 1 place or maybe nowhere
+  
+    # if you want to run it from t in 1 place or maybe nowhere
     data = random_data_split(path="./preprocessing_pipeline")
     x_train, y_train = data['train']
     x_valid, y_valid = data['validate']
@@ -196,6 +217,13 @@ def train(epoch_queue = None):
 
 
 def validate(net: SimpleCNN, criterion, valloader: DataLoader, device, threshold=0.5):
+    """
+    This function runs the model in evaluation mode
+    and computes validation loss along with per-class accuracy metrics.
+    
+    Returns:
+    float: Average validation loss across all batches.
+    """
     net.eval()
     total_loss = 0.0
     correct_class0 = 0
@@ -232,6 +260,27 @@ def validate(net: SimpleCNN, criterion, valloader: DataLoader, device, threshold
 
 
 def calculate_metrics(net: SimpleCNN, dataloader: DataLoader, device, threshold):
+    """
+    Calculate comprehensive metrics to track results across train, test and validation data and across speakers -
+    (creates a confusion matrix for class 1 speakers).
+    
+    
+    Args:
+    - net: The neural network model to evaluate.
+    - dataloader: DataLoader providing input batches.
+    - device: Device to run computations on (CPU or GPU).
+    - speakers_labels: List of speaker identifiers for per-speaker metrics.
+    - threshold: classification threshold. 
+    
+    Returns dictionary containing:
+    - accuracy, precision, recall
+    - f1_none_class0, f1_none_class1: per-class F1 scores
+    - f1_macro: unweighted mean F1 across classes
+    - true_negative, false_positive, false_negative, true_positive: confusion matrix elements
+    - FAR (False Acceptance Ratio)
+    - FRR (False Rejection Ratio)
+    - results_speakers (dict): per-speaker TP and FN ratios (for class 1 speakers)
+    """
     all_predictions = []
     all_labels = []
     net.eval()
@@ -312,6 +361,7 @@ def save_to_csv_experiment_results(
     auc,
     notes=None,
 ):
+    
 
     timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
     header = [
@@ -471,6 +521,9 @@ def save_to_csv_experiment_results(
 
 
 def get_experiment_id(filename):
+    '''
+    Function to track how many experiments have been run so far to get unique experiment ID.
+    '''
     if not os.path.isfile(filename):
         return 1
     with open(filename, "r") as f:
