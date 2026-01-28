@@ -1,7 +1,8 @@
 import torch
 import numpy as np
 import random as rand
-import librosa, gc
+import librosa, gc, os
+from glob import glob
 from preprocessing_pipeline.augmentation import pitch_shift
 from preprocessing_pipeline.preprocessing import preprocess_data
 from preprocessing_pipeline.init import *
@@ -28,6 +29,7 @@ Input: clip_length (int)
 Output: Dataset spectrogram mean (float), standard deviation (float)
 """
 def get_stats(clip_length=3):
+    from preprocessing_pipeline.init import download_data
     download_data()
     total = 0.0
     total_sq = 0.0
@@ -203,7 +205,6 @@ def random_data_split(path="./", clip_length=3): #random test-train-validate dat
         'validate_labels': validate['labels'],
     }
 
-
 """
 convert_to_spectrogram: Converts audio clips into normalized log-mel spectrograms.
 Input: audio_clips (list), sr (int), clip_length (int)
@@ -247,6 +248,7 @@ Input: clip_length (int)
 Output: None (writes spectrogram dataset to ./spectrogram_data)
 """
 def create_spectrogram_for_analysis(clip_length = 3):
+    from preprocessing_pipeline.init import download_data, create_directories
     download_data()
     create_directories("./spectrogram_data")
 

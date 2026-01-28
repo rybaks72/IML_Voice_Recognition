@@ -1,0 +1,218 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="AutoImportSettings">
+    <option name="autoReloadType" value="SELECTIVE" />
+  </component>
+  <component name="ChangeListManager">
+    <list default="true" id="31dc5814-3a7e-42ac-b75f-7af9a0506cb1" name="Changes" comment="">
+      <change beforePath="$PROJECT_DIR$/preprocessing_pipeline/util.py" beforeDir="false" afterPath="$PROJECT_DIR$/preprocessing_pipeline/util.py" afterDir="false" />
+    </list>
+    <option name="SHOW_DIALOG" value="false" />
+    <option name="HIGHLIGHT_CONFLICTS" value="true" />
+    <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
+    <option name="LAST_RESOLUTION" value="IGNORE" />
+  </component>
+  <component name="FileTemplateManagerImpl">
+    <option name="RECENT_TEMPLATES">
+      <list>
+        <option value="Python Script" />
+      </list>
+    </option>
+  </component>
+  <component name="Git.Settings">
+    <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$" />
+  </component>
+  <component name="ProblemsViewState">
+    <option name="selectedTabId" value="CurrentFile" />
+  </component>
+  <component name="ProjectColorInfo">{
+  &quot;associatedIndex&quot;: 2
+}</component>
+  <component name="ProjectId" id="35AMHWpA7jDyBeoBiUEfNM9qtGe" />
+  <component name="ProjectLevelVcsManager">
+    <ConfirmationsSetting value="1" id="Add" />
+  </component>
+  <component name="ProjectViewState">
+    <option name="hideEmptyMiddlePackages" value="true" />
+    <option name="showLibraryContents" value="true" />
+  </component>
+  <component name="PropertiesComponent"><![CDATA[{
+  "keyToString": {
+    "ModuleVcsDetector.initialDetectionPerformed": "true",
+    "Python.generate_report.executor": "Run",
+    "Python.init.executor": "Run",
+    "Python.model.executor": "Run",
+    "Python.preprocessing_pipeline.executor": "Run",
+    "Python.test.executor": "Run",
+    "Python.train.executor": "Run",
+    "Python.train_qui.executor": "Run",
+    "Python.train_util.executor": "Run",
+    "Python.util.executor": "Run",
+    "RunOnceActivity.ShowReadmeOnStart": "true",
+    "RunOnceActivity.TerminalTabsStorage.copyFrom.TerminalArrangementManager.252": "true",
+    "RunOnceActivity.git.unshallow": "true",
+    "database.data.extractors.current.export.id": "Comma-separated (CSV)_id",
+    "git-widget-placeholder": "ResNet-testing",
+    "last_opened_file_path": "C:/Users/Hoang/Desktop/Uni/Semester 5/ML/Project/results-single-val",
+    "node.js.detected.package.eslint": "true",
+    "node.js.detected.package.tslint": "true",
+    "node.js.selected.package.eslint": "(autodetect)",
+    "node.js.selected.package.tslint": "(autodetect)",
+    "nodejs_package_manager_path": "yarn",
+    "settings.editor.selected.configurable": "preferences.keymap",
+    "vue.rearranger.settings.migration": "true"
+  }
+}]]></component>
+  <component name="RecentsManager">
+    <key name="CopyFile.RECENT_KEYS">
+      <recent name="C:\Users\Hoang\Desktop\Uni\Semester 5\ML\Project\results-single-val" />
+      <recent name="C:\Users\Hoang\Desktop\Uni\Semester 5\ML\Project\results" />
+      <recent name="C:\Users\Hoang\Desktop\Uni\Semester 5\ML\Project\tensor_board_outputs-single-val" />
+      <recent name="C:\Users\Hoang\Desktop\Uni\Semester 5\ML\Project\exploratory_data_analysis" />
+    </key>
+  </component>
+  <component name="RunManager">
+    <configuration default="true" type="tests" factoryName="Autodetect">
+      <module name="IML_Voice_Recognition" />
+      <option name="ENV_FILES" value="" />
+      <option name="INTERPRETER_OPTIONS" value="" />
+      <option name="PARENT_ENVS" value="true" />
+      <option name="SDK_HOME" value="" />
+      <option name="WORKING_DIRECTORY" value="" />
+      <option name="IS_MODULE_SDK" value="false" />
+      <option name="ADD_CONTENT_ROOTS" value="true" />
+      <option name="ADD_SOURCE_ROOTS" value="true" />
+      <EXTENSION ID="PythonCoverageRunConfigurationExtension" runner="coverage.py" />
+      <option name="_new_additionalArguments" value="&quot;&quot;" />
+      <option name="_new_target" value="&quot;&quot;" />
+      <option name="_new_targetType" value="&quot;PATH&quot;" />
+      <method v="2" />
+    </configuration>
+    <configuration default="true" type="tests" factoryName="Autodetect">
+      <module name="IML_Voice_Recognition" />
+      <option name="ENV_FILES" value="" />
+      <option name="INTERPRETER_OPTIONS" value="" />
+      <option name="PARENT_ENVS" value="true" />
+      <option name="SDK_HOME" value="" />
+      <option name="WORKING_DIRECTORY" value="" />
+      <option name="IS_MODULE_SDK" value="false" />
+      <option name="ADD_CONTENT_ROOTS" value="true" />
+      <option name="ADD_SOURCE_ROOTS" value="true" />
+      <EXTENSION ID="PythonCoverageRunConfigurationExtension" runner="coverage.py" />
+      <option name="_new_additionalArguments" value="&quot;&quot;" />
+      <option name="_new_target" value="&quot;&quot;" />
+      <option name="_new_targetType" value="&quot;PATH&quot;" />
+      <method v="2" />
+    </configuration>
+    <configuration default="true" type="tests" factoryName="Autodetect">
+      <module name="IML_Voice_Recognition" />
+      <option name="ENV_FILES" value="" />
+      <option name="INTERPRETER_OPTIONS" value="" />
+      <option name="PARENT_ENVS" value="true" />
+      <option name="SDK_HOME" value="" />
+      <option name="WORKING_DIRECTORY" value="" />
+      <option name="IS_MODULE_SDK" value="false" />
+      <option name="ADD_CONTENT_ROOTS" value="true" />
+      <option name="ADD_SOURCE_ROOTS" value="true" />
+      <EXTENSION ID="PythonCoverageRunConfigurationExtension" runner="coverage.py" />
+      <option name="_new_additionalArguments" value="&quot;&quot;" />
+      <option name="_new_target" value="&quot;&quot;" />
+      <option name="_new_targetType" value="&quot;PATH&quot;" />
+      <method v="2" />
+    </configuration>
+  </component>
+  <component name="SharedIndexes">
+    <attachedChunks>
+      <set>
+        <option value="bundled-js-predefined-d6986cc7102b-3aa1da707db6-JavaScript-PY-252.26830.99" />
+        <option value="bundled-python-sdk-164cda30dcd9-0af03a5fa574-com.jetbrains.pycharm.pro.sharedIndexes.bundled-PY-252.26830.99" />
+      </set>
+    </attachedChunks>
+  </component>
+  <component name="TaskManager">
+    <task active="true" id="Default" summary="Default task">
+      <changelist id="31dc5814-3a7e-42ac-b75f-7af9a0506cb1" name="Changes" comment="" />
+      <created>1762548335499</created>
+      <option name="number" value="Default" />
+      <option name="presentableId" value="Default" />
+      <updated>1762548335499</updated>
+      <workItem from="1762548336833" duration="667000" />
+      <workItem from="1762549401188" duration="143000" />
+      <workItem from="1762549634114" duration="124000" />
+      <workItem from="1762549792679" duration="7514000" />
+      <workItem from="1762710557655" duration="7000" />
+      <workItem from="1762713096729" duration="7083000" />
+      <workItem from="1762883038898" duration="5927000" />
+      <workItem from="1762989908081" duration="2457000" />
+      <workItem from="1762992434622" duration="2488000" />
+      <workItem from="1762995006247" duration="154000" />
+      <workItem from="1762995192570" duration="651000" />
+      <workItem from="1762995880072" duration="602000" />
+      <workItem from="1763031425857" duration="4167000" />
+      <workItem from="1763110581134" duration="2209000" />
+      <workItem from="1763154857076" duration="819000" />
+      <workItem from="1763156527404" duration="12012000" />
+      <workItem from="1763405413442" duration="4096000" />
+      <workItem from="1763466032302" duration="10321000" />
+      <workItem from="1763484925132" duration="4900000" />
+      <workItem from="1763501330431" duration="6453000" />
+      <workItem from="1763643618220" duration="422000" />
+      <workItem from="1763743597791" duration="81000" />
+      <workItem from="1764363463011" duration="1054000" />
+      <workItem from="1764435828671" duration="3253000" />
+      <workItem from="1764540787728" duration="1179000" />
+      <workItem from="1764542080312" duration="4793000" />
+      <workItem from="1764547216764" duration="6551000" />
+      <workItem from="1764584426819" duration="28610000" />
+      <workItem from="1764710291949" duration="7463000" />
+      <workItem from="1764751094376" duration="12019000" />
+      <workItem from="1764780381018" duration="38920000" />
+      <workItem from="1764931805139" duration="251000" />
+      <workItem from="1764934489874" duration="5419000" />
+      <workItem from="1765030396075" duration="608000" />
+      <workItem from="1765077603722" duration="212000" />
+      <workItem from="1765218846352" duration="914000" />
+      <workItem from="1765220018128" duration="113000" />
+      <workItem from="1765220783094" duration="10238000" />
+      <workItem from="1765242319797" duration="29365000" />
+      <workItem from="1765388416711" duration="137000" />
+      <workItem from="1765458932813" duration="744000" />
+      <workItem from="1765459748015" duration="177000" />
+      <workItem from="1765459945924" duration="51329000" />
+      <workItem from="1765957030746" duration="2692000" />
+      <workItem from="1769002089277" duration="1433000" />
+      <workItem from="1769308213817" duration="7247000" />
+      <workItem from="1769441971929" duration="1909000" />
+      <workItem from="1769444318248" duration="8306000" />
+      <workItem from="1769519182339" duration="2189000" />
+      <workItem from="1769527693622" duration="5118000" />
+      <workItem from="1769545078855" duration="2081000" />
+    </task>
+    <servers />
+  </component>
+  <component name="TypeScriptGeneratedFilesManager">
+    <option name="version" value="3" />
+  </component>
+  <component name="Vcs.Log.Tabs.Properties">
+    <option name="TAB_STATES">
+      <map>
+        <entry key="MAIN">
+          <value>
+            <State />
+          </value>
+        </entry>
+      </map>
+    </option>
+  </component>
+  <component name="com.intellij.coverage.CoverageDataManagerImpl">
+    <SUITE FILE_PATH="coverage/Project$test.coverage" NAME="test Coverage Results" MODIFIED="1765549141337" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/preprocessing_pipeline" />
+    <SUITE FILE_PATH="coverage/Project$generate_report.coverage" NAME="generate_report Coverage Results" MODIFIED="1769452877339" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/results-single-val" />
+    <SUITE FILE_PATH="coverage/Project$util.coverage" NAME="util Coverage Results" MODIFIED="1765751697430" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/preprocessing_pipeline" />
+    <SUITE FILE_PATH="coverage/Project$train_util.coverage" NAME="train_util Coverage Results" MODIFIED="1765305547493" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/src" />
+    <SUITE FILE_PATH="coverage/Project$train.coverage" NAME="train Coverage Results" MODIFIED="1764871554470" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/src" />
+    <SUITE FILE_PATH="coverage/Project$train_qui.coverage" NAME="train_qui Coverage Results" MODIFIED="1765353656531" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />
+    <SUITE FILE_PATH="coverage/Project$preprocessing_pipeline.coverage" NAME="preprocessing_pipeline Coverage Results" MODIFIED="1765459534827" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/preprocessing_pipeline" />
+    <SUITE FILE_PATH="coverage/Project$model.coverage" NAME="model Coverage Results" MODIFIED="1764711516157" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/src" />
+    <SUITE FILE_PATH="coverage/Project$init.coverage" NAME="init Coverage Results" MODIFIED="1762555937457" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/preprocessing_pipeline" />
+  </component>
+</project>

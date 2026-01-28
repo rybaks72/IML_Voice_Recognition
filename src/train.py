@@ -4,56 +4,69 @@ import torch.optim as optim
 from torch.utils.data import TensorDataset, DataLoader
 import numpy as np
 from sklearn.metrics import f1_score, confusion_matrix, accuracy_score, precision_score, recall_score
-
-#from src.mobilenet_model import MobileNetV2
 from src.model import SimpleCNN
 from torch.utils.tensorboard import SummaryWriter
 import csv
 import os
 
 from src.resnet_model import ResNet18
-# from src.googlenet_model import GoogleNet
-# from src.mobilenet_model import MobileNetV2
 from src.train_util import time_mask, time_shift, freq_mask, get_threshold_roc, gauss_noise
 from datetime import datetime
 from preprocessing_pipeline.util import random_data_split
 
 
 def augment_batch(x, labels, sr=22050):
+    """
+    Apply random data augmentation techniques to a batch of spectrograms.
+
+    Arguments:
+    x (torch.Tensor): Input spectrogram batch of shape (batch_size, channels, time, freq).
+    labels (torch.Tensor): Labels for the batch.
+    sr (int, optional): Sample rate in Hz. Default is 22050. Not used in augmentations.
+    
+    Returns:
+    torch.Tensor: Augmented spectrogram batch with same shape as input.
+    """
+    # Randomly apply time masking 
     if torch.rand((), device=x.device).item() < 0.5:
         x = time_mask(x, max_width=10)
+    
+    # Randomly apply frequency masking 
     if torch.rand((), device=x.device).item() < 0.5:
         x = freq_mask(x, max_height=5)
+    
+    # Randomly apply time shifting 
     if torch.rand((), device=x.device).item() < 0.5:
         x = time_shift(x, max_shift=5)
-    # if torch.rand((), device=x.device).item() < 0.2:
-    #     snr_db = float(torch.empty((), device=x.device).uniform_(10, 30).item())
-    #     x = gauss_noise(x, snr_db)
-
-    # if torch.rand((), device=x.device).item() < 0.5:
-    #     labels_flat = labels.view(-1)
-    #     mask0 = (labels_flat == 0)
-
-    #     if mask0.any():
-    #         x_out = x.clone()
-    #         x_out[mask0] = vtlp(x_out[mask0], sr=sr)
-    #         return x_out
+   
     return x
-#hehe
+
 def train():
-    #model, inputs and labels have to be on the same device
+    """
+    This is our final training loop.
+    
+    This function consists of the complete training pipeline:
+    1. Load preprocessed training, validation, and test data
+    2. Initialize model, optimizer, and loss criterion
+    3. Train for specified number of epochs with validation after each epoch
+    4. Save best model based on validation loss
+    5. Evaluate final model on test set
+    6. Log all results and metrics to CSV and TensorBoard
+    
+    IMPORTANT NOTE: Must be run from IML_voice_recognition directory using 'python -m src.train' to ensure correct relative imports and results file paths.
+    """
+    
+    # Model, inputs and labels must all be on the same device
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     print(f"Using device: {device}")
-    # changed path here
-    #IMPORTANT run it from IML_voice_recognition directory using python -m src.train or at least this way it works for me
-    # if you want to run it from the src directory change the path below to "../preprocessing_pipeline" but in my case the imports did not work AND THEN
-    # you have to change the path to models, results and tensor_board_outputs directory
-    # I will try to fix that later so that you can change it in 1 place or maybe nowhere
+    
+    # Load preprocessed data (already split into train/val/test sets)
     data = random_data_split(path="./preprocessing_pipeline")
     x_train, y_train = data['train']
     x_valid, y_valid = data['validate']
     x_test, y_test = data['test']
 
+    # Extract speaker labels for the speaker confusion matrix later
     test_labels = data['test_labels']
     print(f"Test speaker labels length: {len(test_labels)}")
     validate_labels = data['validate_labels']
@@ -68,45 +81,23 @@ def train():
     train_loader = DataLoader(TensorDataset(x_train, y_train), batch_size=batch_size, shuffle=True)
     val_loader = DataLoader(TensorDataset(x_valid, y_valid), batch_size=32, shuffle=False)
     test_loader = DataLoader(TensorDataset(x_test, y_test), batch_size=32, shuffle=False)
+    
+    # Use weighted cross-entropy loss to handle class imbalance
     weights = torch.tensor([1.0, data['weight']]).to(device)
     criterion = nn.CrossEntropyLoss(weight=weights)
 
-    #model_name = "first_trial"
-    #net = SimpleCNN().to(device)
+    
 
     model_name = "resnet_trial_221_32_1_dropout_0.5_adam_lr_0.0005_wd_0.01_conv_avgpool"
     net = ResNet18().to(device)
-   # net.apply(initialization_uniform)
 
+    # Experiment notes for tracking model changes
     notes = "avg pool in first conv layer instead of max pool"
-
-    # model_name = "googlenet_trial"
-    # net = GoogleNet().to(device)
-
-    # model_name = "mobilenet_trial"
-    # net = MobileNetV2().to(device)
 
    
     learning_rate = 0.0005
     weight_dec = 0.01
     optimizer = optim.Adam(net.parameters(), lr=learning_rate, weight_decay=weight_dec)
-    #optimizer = optim.Adam(net.parameters(), lr=learning_rate)
-    #optimizer = torch.optim.SGD(net.parameters(), lr=learning_rate, momentum=0.9, weight_decay=0.0001)
-
-    # scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(
-    # optimizer, 
-    # T_max=50,     
-    # eta_min=0.0002)
-
-    # scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(
-    # optimizer, 
-    # mode='min', 
-    # factor=0.9, #multiply by this
-    # patience=5, 
-    # min_lr=0.0001)
-
-    #learning_rate = 0.1
-   # optimizer = torch.optim.SGD(net.parameters(), lr=learning_rate)
 
     best_model_loss = float('inf')
 
@@ -115,29 +106,25 @@ def train():
     os.makedirs(results_directory, exist_ok=True)
     filename_results = "./results/tests_results.csv"
     filename_speakers_conf = "./results/speakers_conf_matrix.csv"
-    # id is assigned automatically based on how many rows we have in the filename_results file
+
+    # Experiment ID is auto-incremented based on number of existing experiments
     experiment_id = get_experiment_id(filename_results)
 
-    #directory with models
+    # directory with models
     os.makedirs("./models", exist_ok=True)
+    
+    # setup TensorBoard logging
     writer = SummaryWriter(log_dir=f"./{get_tensorboard_logdir()}/id_{experiment_id}_{model_name}")
-
-#     scheduler = torch.optim.lr_scheduler.StepLR(
-#     optimizer,
-#     step_size=15,
-#     gamma=0.8
-# )
 
     max_epochs = 50
     best_epoch = 0
     print("TRAINING START")
-    for epoch in range(max_epochs):  # loop over the dataset multiple times, this should be adjusted later
+    for epoch in range(max_epochs):  
         net.train()
         running_loss = 0.0
         for i, data in enumerate(train_loader, 0):
 
             inputs, labels = data
-           # print(f"inputs shape: {inputs.shape}")
             inputs, labels = inputs.float().to(device), labels.to(device)
             inputs = augment_batch(inputs, labels)
 
@@ -152,21 +139,16 @@ def train():
 
             current_batch_num = epoch * len(train_loader) + i
 
-            #val_loss = validate(net, criterion, val_loader, device)
-
-            # one plot with both
-            # writer.add_scalars('loss', {
-            #     'train': loss.item(),
-            #     'validation': val_loss
-            # }, current_batch_num)
-            #net.train()
-
-        #save the best model yet
+        # save the best model yet
         val_loss = validate(net, criterion, val_loader, device)
+        
+        # log training and validation loss to TensorBoard
         writer.add_scalars('loss', {
                 'train': running_loss/len(train_loader),
                 'validation': val_loss
             }, epoch)
+        
+        # save model if validation loss improves
         if val_loss < best_model_loss:
             best_model_loss = val_loss
             best_epoch = epoch
@@ -180,11 +162,12 @@ def train():
             net.train()
 
         print(f"Epoch {epoch}, loss: {running_loss/len(train_loader):.3f}")
-        #scheduler.step(val_loss)
-        # scheduler.step()
+       
 
     threshold, auc = get_threshold_roc(net, val_loader, device)
     print(f"Testing the best model, AUC: {auc:.4f}")
+    
+    # FINAL EVALUATION
     net.load_state_dict((torch.load(f"./models/id_{experiment_id}_{model_name}.pth", map_location=device))['net_state_dict'])
     test_metrics = calculate_metrics(net, test_loader, device, test_labels, threshold)
     val_metrics = calculate_metrics(net, val_loader, device, validate_labels, threshold)
@@ -202,6 +185,7 @@ def train():
                                    notes=notes
                                    )
 
+    # Save per-speaker confusion matrix
     save_to_csv_speaker_confusion_matrix(filename_speakers_conf,
                                          experiment_id,
                                          model_name,
@@ -209,28 +193,17 @@ def train():
                                          val_metrics['results_speakers'])
 
     print("TEST END")
-
     writer.close()
 
 
-
-def initialization_he(m):
-    if type(m) == nn.Conv2d or type(m) == nn.Linear:
-        nn.init.kaiming_normal_(m.weight, mode='fan_out', nonlinearity='relu')
-
-def initialization_xavier_normal(m):
-    if type(m) == nn.Conv2d or type(m) == nn.Linear:
-        nn.init.xavier_normal_(m.weight)
-#or should I test Xavier uniform?
-
-def initialization_uniform(m):
-    if type(m) == nn.Conv2d or type(m) == nn.Linear:
-        nn.init.uniform_(m.weight)
-        
-
-
-
-def validate(net: SimpleCNN, criterion, valloader: DataLoader, device):
+def validate(net, criterion, valloader: DataLoader, device):
+    """
+    This function runs the model in evaluation mode
+    and computes validation loss along with per-class accuracy metrics.
+    
+    Returns:
+    float: Average validation loss across all batches.
+    """
     net.eval()
     total_loss = 0.0
     correct_class0 = 0
@@ -258,11 +231,32 @@ def validate(net: SimpleCNN, criterion, valloader: DataLoader, device):
         acc1 = correct_class1 / total_class1 if total_class1 > 0 else 0
 
         # Log to TensorBoard
-        print(f"\n>>> [VAL REPORT] Loss: {avg_loss:.4f} | Class 0 (Imposters): {acc0:.1f} | Class 1 (You): {acc1:.1f}")
+        print(f"\nVAL Loss: {avg_loss:.4f} | Class 0: {acc0:.1f} | Class 1: {acc1:.1f}")
         return avg_loss
 
 
 def calculate_metrics(net: SimpleCNN, dataloader: DataLoader, device, speakers_labels=[], threshold=0.5):
+    """
+    Calculate comprehensive metrics to track results across train, test and validation data and across speakers -
+    (creates a confusion matrix for class 1 speakers).
+    
+    
+    Args:
+    - net: The neural network model to evaluate.
+    - dataloader: DataLoader providing input batches.
+    - device: Device to run computations on (CPU or GPU).
+    - speakers_labels: List of speaker identifiers for per-speaker metrics.
+    - threshold: classification threshold. 
+    
+    Returns dictionary containing:
+    - accuracy, precision, recall
+    - f1_none_class0, f1_none_class1: per-class F1 scores
+    - f1_macro: unweighted mean F1 across classes
+    - true_negative, false_positive, false_negative, true_positive: confusion matrix elements
+    - FAR (False Acceptance Ratio)
+    - FRR (False Rejection Ratio)
+    - results_speakers (dict): per-speaker TP and FN ratios (for class 1 speakers)
+    """
     all_predictions = []
     all_labels = []
     net.eval()
@@ -310,34 +304,25 @@ def calculate_metrics(net: SimpleCNN, dataloader: DataLoader, device, speakers_l
     # This does not take label imbalance into account.
     f1_macro = f1_score(all_labels, all_predictions, average='macro', zero_division=0)
 
-    
-    
     results_speakers = {}
 
-   # print(f"Speakers labels AGAIN length: {len(speakers_labels)}")
-   # print(f"all predictions length AAAAAAAAAa: {len(all_predictions)}")
 
     speaker_to_id = {name: i for i, name in enumerate(sorted(set(speakers_labels)))}
     speakers_labels_ids = [speaker_to_id[name] for name in speakers_labels]
     speakers_labels_ids = torch.tensor(speakers_labels_ids)
 
-   # print(f"SPEKAR LABELS IDS LENGTH: {len(speakers_labels_ids)}")
-
-   # print(f"all predictions: {all_predictions}")
+ 
     if not len(speakers_labels)==0:
         speakers_class1 = ['kasia', 'kuba', 'marcin', 'sylwia']
-        #speakers_class1_ids = [speaker_to_id[name] for name in speakers_class1] 
         all_predictions_tensor = torch.tensor(all_predictions, dtype=torch.int64)
         for sp in speakers_class1:
             sp_id = speaker_to_id[sp]
             # get samples belonging to this speaker
             sth = (speakers_labels_ids == sp_id)
-            #print(f"AAAAAAAAAAAAAAAAAAAAAAA sth: {sth}")
             sp_pred = all_predictions_tensor[sth]
             print(f"Speaker: {sp} predictions: ")
             print(sp_pred)
             print('\n')
-
 
             TP = (sp_pred == 1).sum().item()
             print(f"TP for {sp}: {TP}\n")
@@ -381,6 +366,9 @@ def save_to_csv_experiment_results(
     best_epoch,
     notes=None,
 ):
+    '''
+    Function that saves the experiment results to a CSV file.
+    '''
 
     timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
     header = [
@@ -545,6 +533,9 @@ def save_to_csv_speaker_confusion_matrix(
     val_results_speakers,
     notes=None,
 ):
+    '''
+    Function that saves the per-speaker confusion matrix results to a CSV file.
+    '''
 
     timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
     header = [
@@ -605,6 +596,9 @@ def save_to_csv_speaker_confusion_matrix(
 
 
 def get_experiment_id(filename):
+    '''
+    File to track how many experiments have been run so far to get unique experiment ID.
+    '''
     if not os.path.isfile(filename):
         return 1
     with open(filename, "r") as f:
