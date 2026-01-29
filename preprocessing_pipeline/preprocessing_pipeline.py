@@ -1,18 +1,8 @@
-import pandas as pd
 import numpy as np
-import matplotlib.pylab as plt
-import seaborn as sns
-
 from glob import glob
-from itertools import cycle
-
 import librosa
 import librosa.display
-import IPython.display as ipd
 import os
-from pathlib import Path
-
-import torch
 from init import dowload_data, create_directories
 from util import preprocess_data, convert_to_spectograms, convert_with_pitch_shift
 
