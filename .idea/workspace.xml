@@ -5,7 +5,8 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="31dc5814-3a7e-42ac-b75f-7af9a0506cb1" name="Changes" comment="">
-      <change beforePath="$PROJECT_DIR$/preprocessing_pipeline/util.py" beforeDir="false" afterPath="$PROJECT_DIR$/preprocessing_pipeline/util.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/iml_gui.ipynb" beforeDir="false" afterPath="$PROJECT_DIR$/iml_gui.ipynb" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
