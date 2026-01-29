@@ -2,13 +2,42 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
-# Definition of the Basic Residual Block
+'''
+This is a simplified ResNet-18 model obtained after the tests.
+There is one dropout layer before the final fully connected layer.
+Instead of the typical 4 layers of ResNet-18, we use 3 layers with [2, 2, 1] blocks respectively.
+I leave the commented code from previous versions as proof of our work.
+'''
+# #shortcut version 3
+
+# class SELayer(nn.Module):
+#     def __init__(self, channel, reduction=16):
+#         super(SELayer, self).__init__()
+#         self.avg_pool = nn.AdaptiveAvgPool2d(1)
+#         self.fc = nn.Sequential(
+#             nn.Linear(channel, channel // reduction, bias=False),
+#             nn.ReLU(inplace=True),
+#             nn.Linear(channel // reduction, channel, bias=False),
+#             nn.Sigmoid()
+#         )
+
+#     def forward(self, x):
+#         b, c, _, _ = x.size()
+#         y = self.avg_pool(x).view(b, c)
+#         y = self.fc(y).view(b, c, 1, 1)
+#         return x * y.expand_as(x)
+
+
+
+
 class BasicBlock(nn.Module):
+    # For ResNet-18 and ResNet-34, the expansion factor is 1
     expansion = 1
  
     def __init__(self, in_channels, out_channels, stride=1, kernel_size=3):
         super(BasicBlock, self).__init__()
-        
+        # #shortcut version 4
+        # self.stride = stride
 
         # added padding calculation to safely chang ethe kernel size
         pad = (kernel_size - 1) // 2
@@ -24,6 +53,7 @@ class BasicBlock(nn.Module):
         )
         self.bn1 = nn.BatchNorm2d(out_channels)
         self.relu = nn.ReLU(inplace=True)
+        #self.bn1 = nn.BatchNorm2d(out_channels)
 
         # Second Conv layer + BN (ReLU is applied after the shortcut addition)
         self.conv2 = nn.Conv2d(
@@ -36,6 +66,13 @@ class BasicBlock(nn.Module):
         )
         self.bn2 = nn.BatchNorm2d(out_channels)
 
+        #shortcut vrsion 4
+        self.shortcut = nn.Sequential()
+
+        # # shortcut version 3
+        # self.se = SELayer(out_channels, reduction=16)
+
+        #shortcut version1 and 3
         # Shortcut connection (Identity mapping)
         self.shortcut = nn.Sequential()
         # If input and output dimensions (channels or spatial size) differ,
@@ -47,6 +84,12 @@ class BasicBlock(nn.Module):
                 nn.BatchNorm2d(self.expansion * out_channels)
            )
 
+        # # shortcut version 2
+        # self.shortcut = nn.Sequential(
+        #     nn.Conv2d(in_channels, self.expansion * out_channels, 
+        #             kernel_size=1, stride=stride, bias=False),
+        #     nn.BatchNorm2d(self.expansion * out_channels)
+        # )
 
     def forward(self, x):
         # Store the original input for the shortcut connection
@@ -61,6 +104,29 @@ class BasicBlock(nn.Module):
         out = self.conv2(out)
         out = self.bn2(out)
 
+       # out = self.se(out)
+
+        # # shortcut version 4
+        # # this replaces the 1x1 convolution shortcut
+        # if out.shape != identity.shape:
+        #     # average pooling to downsample spatial dimensions instead of conv layer (use stride to match spatial dimensions)
+        #     if self.stride > 1:
+        #         identity = F.avg_pool2d(identity, self.stride)
+            
+        #     #  check if spatial dimensions STILL don't match (runtime error before)
+        #     if identity.shape[2:] != out.shape[2:]:
+        #         identity = F.adaptive_avg_pool2d(identity, (out.shape[2], out.shape[3]))
+
+        #     # match the channel dimensions (padding with zeros)
+        #     if out.shape[1] != identity.shape[1]:
+        #         pad_channels = out.shape[1] - identity.shape[1]
+        #         pad = torch.zeros(identity.shape[0], pad_channels, 
+        #                           identity.shape[2], identity.shape[3]).to(x.device)
+        #         identity = torch.cat([identity, pad], dim=1)
+            
+        # #  Add the identity to the output
+        # out += identity
+
         # Add the shortcut (Residual connection: H(x) = F(x) + x)
         out += self.shortcut(identity)
         out = self.relu(out)
@@ -69,27 +135,48 @@ class BasicBlock(nn.Module):
         return out
 
 
+# 2. Definition of the ResNet Architecture (ResNet-18 implementation)
 class ResNet(nn.Module):
+    # block: the building block (e.g., BasicBlock)
+    # num_blocks: list defining the number of blocks in each of the four layers
+    # num_classes: number of output classes (2 for Imposter/You)
     def __init__(self, block, num_blocks, num_classes=2):
         super(ResNet, self).__init__()
         self.in_channels = 32
 
+        # Initial Convolutional Layer (handles 1-channel spectrogram input)
+        # kernel_size=7, stride=2, MaxPool: typical for processing large images (spectrograms)
         self.conv1 = nn.Sequential(
             nn.Conv2d(1, 32, kernel_size=3, stride=2, padding=3, bias=False),  # Input channel set to 1
             nn.BatchNorm2d(32),
             nn.ReLU(inplace=True),
+            #nn.BatchNorm2d(32),
             nn.MaxPool2d(kernel_size=3, stride=2, padding=1)
+            #nn.AvgPool2d(kernel_size=3, stride=2, padding=1)
         )
 
         # Residual Blocks Layers
         self.layer1 = self._make_layer(block, 32, num_blocks[0], stride=1)
         self.layer2 = self._make_layer(block, 64, num_blocks[1], stride=2)
         self.layer3 = self._make_layer(block, 128, num_blocks[2], stride=2)
+        #self.layer4 = self._make_layer(block, 512, num_blocks[3], stride=2)
+
+        # Global Average Pooling (used instead of Flattening to normalize output size)
         self.avgpool = nn.AdaptiveAvgPool2d((1, 1))
 
-        self.dropout = nn.Dropout(p=0.5)
+        #testing global max pooling
+        #self.avgpool = nn.AdaptiveMaxPool2d((1, 1))
 
-        # Final Fully Connected Layer (Output classes set to 2)
+        #testing dropout layer
+        #self.dropout = nn.Dropout(p=0.5)
+
+        #testing multiple dropout layers
+        #self.dropout1 = nn.Dropout(p=0.2)
+        #self.dropout2 = nn.Dropout(p=0.2)
+        #self.dropout3 = nn.Dropout(p=0.2)
+        #self.dropout = nn.Dropout(p=0.5)
+
+        # Final Fully Connected Layer 
         self.fc = nn.Linear(128 * block.expansion, num_classes)
 
     def _make_layer(self, block, out_channels, num_blocks, stride):
@@ -105,8 +192,12 @@ class ResNet(nn.Module):
     def forward(self, x):
         out = self.conv1(x)
         out = self.layer1(out)
+       # out = self.dropout1(out)
         out = self.layer2(out)
+        #out = self.dropout2(out)
         out = self.layer3(out)
+       # out = self.dropout3(out)
+       # out = self.layer4(out)
 
         # Apply Global Average Pooling
         out = self.avgpool(out)
@@ -120,10 +211,9 @@ class ResNet(nn.Module):
         out = self.fc(out)
         return out
 
+
+
 def ResNet18():
-    '''
-    This is a simplified ResNet-18 model obtained after the tests.
-    2, 2, 1 corresponds to the number of blocks in each of the three layers.
-    There is one dropout layer before the final fully connected layer.
-    '''
+    # Number of blocks in each layer for ResNet-18: [2, 2, 2, 2]
+    # lets change to [1, 1, 1, 1]
     return ResNet(BasicBlock, [2, 2,1])

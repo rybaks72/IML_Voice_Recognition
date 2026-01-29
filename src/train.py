@@ -1,3 +1,7 @@
+'''
+IMPORTANT NOTE: should be run from IML_voice_recognition directory using 'python -m src.train' to ensure correct relative imports and results file paths.
+'''
+
 import torch
 import torch.nn as nn
 import torch.optim as optim
@@ -20,6 +24,17 @@ from preprocessing_pipeline.util import random_data_split
 
 
 def augment_batch(x, labels, sr=22050):
+    """
+    Apply random data augmentation techniques to a batch of spectrograms.
+
+    Arguments:
+    x (torch.Tensor): Input spectrogram batch of shape (batch_size, channels, time, freq).
+    labels (torch.Tensor): Labels for the batch.
+    sr (int, optional): Sample rate in Hz. Default is 22050. Not used in augmentations.
+    
+    Returns:
+    torch.Tensor: Augmented spectrogram batch with same shape as input.
+    """
     if torch.rand((), device=x.device).item() < 0.5:
         x = time_mask(x, max_width=10)
     if torch.rand((), device=x.device).item() < 0.5:
@@ -39,8 +54,21 @@ def augment_batch(x, labels, sr=22050):
     #         x_out[mask0] = vtlp(x_out[mask0], sr=sr)
     #         return x_out
     return x
-#hehe
+
 def train():
+    """
+    This is our final training loop.
+    
+    This function consists of the complete training pipeline:
+    1. Load preprocessed training, validation, and test data
+    2. Initialize model, optimizer, and loss criterion
+    3. Train for specified number of epochs with validation after each epoch
+    4. Save best model based on validation loss
+    5. Evaluate final model on test set
+    6. Log all results and metrics to CSV and TensorBoard
+    
+    IMPORTANT NOTE: Must be run from IML_voice_recognition directory using 'python -m src.train' to ensure correct relative imports and results file paths.
+    """
     #model, inputs and labels have to be on the same device
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     print(f"Using device: {device}")
@@ -89,7 +117,7 @@ def train():
     learning_rate = 0.0005
     weight_dec = 0.01
     optimizer = optim.Adam(net.parameters(), lr=learning_rate, weight_decay=weight_dec)
-    #optimizer = optim.Adam(net.parameters(), lr=learning_rate)
+    #optimizer = optim.AdamW(net.parameters(), lr=learning_rate)
     #optimizer = torch.optim.SGD(net.parameters(), lr=learning_rate, momentum=0.9, weight_decay=0.0001)
 
     # scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(
@@ -103,6 +131,11 @@ def train():
     # factor=0.9, #multiply by this
     # patience=5, 
     # min_lr=0.0001)
+    #     scheduler = torch.optim.lr_scheduler.StepLR(
+#     optimizer,
+#     step_size=15,
+#     gamma=0.8
+# )
 
     #learning_rate = 0.1
    # optimizer = torch.optim.SGD(net.parameters(), lr=learning_rate)
@@ -121,11 +154,7 @@ def train():
     os.makedirs("./models", exist_ok=True)
     writer = SummaryWriter(log_dir=f"./{get_tensorboard_logdir()}/id_{experiment_id}_{model_name}")
 
-#     scheduler = torch.optim.lr_scheduler.StepLR(
-#     optimizer,
-#     step_size=15,
-#     gamma=0.8
-# )
+
 
     max_epochs = 50
     best_epoch = 0
@@ -212,10 +241,30 @@ def train():
     writer.close()
 
 
+def initialization_he(m):
+    if type(m) == nn.Conv2d or type(m) == nn.Linear:
+        nn.init.kaiming_normal_(m.weight, mode='fan_out', nonlinearity='relu')
+
+def initialization_xavier_normal(m):
+    if type(m) == nn.Conv2d or type(m) == nn.Linear:
+        nn.init.xavier_normal_(m.weight)
+#or should I test Xavier uniform?
+
+def initialization_uniform(m):
+    if type(m) == nn.Conv2d or type(m) == nn.Linear:
+        nn.init.uniform_(m.weight)
+
 
 
 
 def validate(net: SimpleCNN, criterion, valloader: DataLoader, device):
+    """
+    This function runs the model in evaluation mode
+    and computes validation loss along with per-class accuracy metrics.
+    
+    Returns:
+    float: Average validation loss across all batches.
+    """
     net.eval()
     total_loss = 0.0
     correct_class0 = 0
@@ -243,11 +292,32 @@ def validate(net: SimpleCNN, criterion, valloader: DataLoader, device):
         acc1 = correct_class1 / total_class1 if total_class1 > 0 else 0
 
         # Log to TensorBoard
-        print(f"\n>>> [VAL REPORT] Loss: {avg_loss:.4f} | Class 0 (Imposters): {acc0:.1f} | Class 1 (You): {acc1:.1f}")
+        print(f"\n Val Loss: {avg_loss:.4f} | Class 0 (Imposters): {acc0:.1f} | Class 1 (You): {acc1:.1f}")
         return avg_loss
 
 
 def calculate_metrics(net: SimpleCNN, dataloader: DataLoader, device, speakers_labels=[], threshold=0.5):
+    """
+    Calculate comprehensive metrics to track results across train, test and validation data and across speakers -
+    (creates a confusion matrix for class 1 speakers).
+    
+    
+    Args:
+    - net: The neural network model to evaluate.
+    - dataloader: DataLoader providing input batches.
+    - device: Device to run computations on (CPU or GPU).
+    - speakers_labels: List of speaker identifiers for per-speaker metrics.
+    - threshold: classification threshold. 
+    
+    Returns dictionary containing:
+    - accuracy, precision, recall
+    - f1_none_class0, f1_none_class1: per-class F1 scores
+    - f1_macro: unweighted mean F1 across classes
+    - true_negative, false_positive, false_negative, true_positive: confusion matrix elements
+    - FAR (False Acceptance Ratio)
+    - FRR (False Rejection Ratio)
+    - results_speakers (dict): per-speaker TP and FN ratios (for class 1 speakers)
+    """
     all_predictions = []
     all_labels = []
     net.eval()
@@ -590,6 +660,9 @@ def save_to_csv_speaker_confusion_matrix(
 
 
 def get_experiment_id(filename):
+    '''
+    File to track how many experiments have been run so far to get unique experiment ID.
+    '''
     if not os.path.isfile(filename):
         return 1
     with open(filename, "r") as f:
