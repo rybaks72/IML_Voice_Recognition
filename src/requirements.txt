@@ -2,3 +2,6 @@ torch
 torchvision
 numpy
 scikit-learn
+scipy
+librosa
+matplotlib
